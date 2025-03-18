@@ -2,15 +2,17 @@
 import { defineProps, defineEmits, ref, watch } from "vue";
 
 const props = defineProps<{ 
+  title: string; // 🟢 Title alohida olingan
   formData: Record<string, any>; 
-  fields: { id: string; label: string; placeholder: string }[] 
+  fields: { id: string; label: string; placeholder: string }[]; 
 }>();
 
 const emit = defineEmits(["update:formData"]);
 
+// `localData` - formdagi malumotlarni saqlash uchun
 const localData = ref({ ...props.formData });
 
-// O'zgarishlarni ota komponentga uzatish
+// `localData` o'zgarsa, `formData` ga o‘zgartirishlarni jo‘natish
 watch(localData, (newValue) => {
   emit("update:formData", newValue);
 }, { deep: true });
@@ -18,7 +20,7 @@ watch(localData, (newValue) => {
 
 <template>
   <div class="w-full form-user flex flex-col gap-4">
-    <h1 class="text-[32px] font-[600]">{{ formData.title }}</h1>
+    <h1 class="text-[32px] font-[600]">{{ title }}</h1> <!-- ✅ Title to'g'ri ishlaydi -->
 
     <div class="w-full form-input flex flex-wrap gap-4">
       <div v-for="field in fields" :key="field.id" class="w-[45%] form-label flex flex-col gap-2">

@@ -17,8 +17,8 @@
         </nuxt-link>
         <hr class="text-[#F6F6F6] h-2">
         <div class="flex flex-col gap-2 mt-2">
-            <h1 class="font-[600] text-[24px]">Profil</h1>
-            <h1 class="font-[600] text-[24px]">Dili değiştir</h1>
+            <nuxt-link to="/profile" class="font-[600] text-[24px]">Profil</nuxt-link>
+            <nuxt-link to="/" class="font-[600] text-[24px]">Dili değiştir</nuxt-link>
         </div>
         <hr class="text-[#F6F6F6] h-2">
         <h1 class="font-[600] text-[24px] text-[#EA3A00] cursor-pointer">Profilden çıkış</h1>
