@@ -3,27 +3,64 @@ definePageMeta({
   layout: "auth",
 });
 import { ref, computed } from "vue";
+import { useRouter } from "vue-router";
 
-const phone = ref("");
+const router = useRouter();
+const username = ref("");
 const password = ref("");
 const showPassword = ref(false);
+const errorMessage = ref("");
 
-const isFormValid = computed(() => phone.value.trim() !== "" && password.value.trim() !== "");
+const isFormValid = computed(() => username.value.trim() !== "" && password.value.trim() !== "");
 
 const togglePassword = () => {
   showPassword.value = !showPassword.value;
 };
+
+// Javob tipi
+interface LoginResponse {
+  access: string;
+  refresh: string;
+  username: string; // ✨ Username ham qaytarilishi kerak!
+}
+
+const login = async () => {
+  errorMessage.value = "";
+
+  try {
+    const response = await $fetch<LoginResponse>('http://turantalim2.pythonanywhere.com/user/login/', {
+      method: 'POST',
+      headers: { "Content-Type": "application/json" },
+      body: { username: username.value.trim(), password: password.value.trim() },
+    });
+
+    if (response.access && response.refresh) {
+      localStorage.setItem('access_token', response.access);
+      localStorage.setItem('refresh_token', response.refresh);
+      localStorage.setItem('username', username.value.trim()); // ✨ Username ham saqlaymiz
+      await router.push('/profile/');
+    } else {
+      errorMessage.value = "Login yoki parol noto‘g‘ri.";
+    }
+  } catch (err: any) {
+    errorMessage.value = err.data?.message || "Serverga bog‘lanib bo‘lmadi.";
+  }
+};
+
 </script>
+
+
 
 <template>
   <section class="w-[90%] lg:w-[40%] h-[511px] bg-white rounded-[30px] flex flex-col items-center gap-5 px-6 py-8">
     <h1 class="text-4xl font-semibold text-[#141522]">Giriş yap</h1>
     <h3 class="text-2xl font-normal text-[#141522]">Bilgilerinizi onaylayın</h3>
-    <form class="w-full flex flex-col gap-5">
+    
+    <form class="w-full flex flex-col gap-5" @submit.prevent="login">
       <input
-        v-model="phone"
+        v-model="username"
         type="text"
-        placeholder="Telefon numarası"
+        placeholder="Kullanıcı adı"
         class="w-full h-[70px] rounded-xl border-2 border-[#EDEFF7] outline-none px-5 bg-[#F8F9FF] text-[#9199B1] focus:border-[#0C8CE9] focus:text-[#141522] transition"
       />
       
@@ -35,10 +72,12 @@ const togglePassword = () => {
           class="w-full h-[70px] rounded-xl border-2 border-[#EDEFF7] outline-none px-5 pr-12 bg-[#F8F9FF] text-[#9199B1] focus:border-[#0C8CE9] focus:text-[#141522] transition"
         />
         <button type="button" @click="togglePassword" class="absolute right-4 top-1/2 transform -translate-y-1/2">
-            <SharedEyeClosed v-if="showPassword"/>
-            <SharedEyeOpen v-else/>
+          <SharedEyeClosed v-if="showPassword"/>
+          <SharedEyeOpen v-else/>
         </button>
       </div>
+
+      <p v-if="errorMessage" class="text-red-500 text-sm">{{ errorMessage }}</p>
 
       <button
         type="submit"
@@ -49,8 +88,7 @@ const togglePassword = () => {
         Giriş yap
       </button>
     </form>
+
     <nuxt-link to="./register" class="text-[#9199B1] text-lg underline">Hesabınız yok mu? Kayıt olun!</nuxt-link>
   </section>
 </template>
-
-
