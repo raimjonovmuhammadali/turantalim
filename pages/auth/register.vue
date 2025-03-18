@@ -45,7 +45,7 @@ const registerUser = async () => {
   errorMessage.value = "";
 
   try {
-    const response = await axios.post("http://turantalim2.pythonanywhere.com/user/register/", {
+    const response = await axios.post("https://turantalim2.pythonanywhere.com/user/register/", {
       username: form.value.username,
       first_name: form.value.firstName,
       last_name: form.value.lastName,

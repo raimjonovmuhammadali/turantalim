@@ -28,7 +28,7 @@ const login = async () => {
   errorMessage.value = "";
 
   try {
-    const response = await $fetch<LoginResponse>('http://turantalim2.pythonanywhere.com/user/login/', {
+    const response = await $fetch<LoginResponse>('https://turantalim2.pythonanywhere.com/user/login/', {
       method: 'POST',
       headers: { "Content-Type": "application/json" },
       body: { username: username.value.trim(), password: password.value.trim() },
