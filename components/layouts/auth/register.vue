@@ -6,6 +6,7 @@ definePageMeta({
 import { ref, computed } from "vue";
 import axios from "axios";
 import { useRouter } from "vue-router";
+import { API_BASE_URL } from "@/utils/api";
 
 const router = useRouter();
 
@@ -45,7 +46,7 @@ const registerUser = async () => {
   errorMessage.value = "";
 
   try {
-    const response = await axios.post("https://turantalim2.pythonanywhere.com/user/register/", {
+    const response = await axios.post(`${API_BASE_URL}/user/register/`, {
       username: form.value.username,
       first_name: form.value.firstName,
       last_name: form.value.lastName,
@@ -65,10 +66,11 @@ const registerUser = async () => {
     isLoading.value = false;
   }
 };
+const emit = defineEmits(["change-tab"]);
 </script>
 
 <template>
-  <section class="w-[90%] lg:w-[40%] bg-white rounded-[30px] flex flex-col items-center gap-5 px-6 py-8">
+  <section class="w-full bg-white rounded-[30px] flex flex-col items-center gap-5 px-6 py-8">
     <h1 class="text-3xl font-semibold text-[#141522]">Kayıt ol</h1>
     <h3 class="text-xl font-normal text-[#141522]">Bilgilerinizi onaylayın</h3>
 
@@ -114,6 +116,6 @@ const registerUser = async () => {
       </button>
     </form>
 
-    <nuxt-link to="./login" class="text-gray-500 text-sm underline"> Zaten bir hesabınız var mı? Giriş yap! </nuxt-link>
+    <button @click="emit('change-tab', 'login')" class="text-gray-500 text-sm underline"> Zaten bir hesabınız var mı? Giriş yap! </button>
   </section>
 </template>

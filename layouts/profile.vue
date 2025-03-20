@@ -9,7 +9,7 @@ const toggleUser = () => {
 </script>
 <template>
   <section
-    class="w-full bg-[#DBEFFF] flex flex-col items-center py-5"
+    class="w-full h-[100vh] bg-[#DBEFFF] flex flex-col items-center py-5"
   >
     <div class="w-[90%] mx-auto flex flex-col justify-start gap-5">
       <LayoutsProfileNavbar @toggle-user="toggleUser" />

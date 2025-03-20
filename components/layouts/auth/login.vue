@@ -2,8 +2,10 @@
 definePageMeta({
   layout: "auth",
 });
+
 import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
+import { API_BASE_URL } from "@/utils/api"; // 🟢 BASE_URL import qilindi
 
 const router = useRouter();
 const username = ref("");
@@ -21,24 +23,24 @@ const togglePassword = () => {
 interface LoginResponse {
   access: string;
   refresh: string;
-  username: string; // ✨ Username ham qaytarilishi kerak!
+  username: string;
 }
 
 const login = async () => {
   errorMessage.value = "";
 
   try {
-    const response = await $fetch<LoginResponse>('https://turantalim2.pythonanywhere.com/user/login/', {
-      method: 'POST',
+    const response = await $fetch<LoginResponse>(`${API_BASE_URL}/user/login/`, { // 🟢 BASE_URL dan foydalanildi
+      method: "POST",
       headers: { "Content-Type": "application/json" },
       body: { username: username.value.trim(), password: password.value.trim() },
     });
 
     if (response.access && response.refresh) {
-      localStorage.setItem('access_token', response.access);
-      localStorage.setItem('refresh_token', response.refresh);
-      localStorage.setItem('username', username.value.trim()); // ✨ Username ham saqlaymiz
-      await router.push('/profile/');
+      localStorage.setItem("access_token", response.access);
+      localStorage.setItem("refresh_token", response.refresh);
+      localStorage.setItem("username", username.value.trim());
+      await router.push("/profile/");
     } else {
       errorMessage.value = "Login yoki parol noto‘g‘ri.";
     }
@@ -46,13 +48,10 @@ const login = async () => {
     errorMessage.value = err.data?.message || "Serverga bog‘lanib bo‘lmadi.";
   }
 };
-
+const emit = defineEmits(["change-tab"]);
 </script>
-
-
-
 <template>
-  <section class="w-[90%] lg:w-[40%] h-[511px] bg-white rounded-[30px] flex flex-col items-center gap-5 px-6 py-8">
+  <section class="w-full  h-[511px] bg-white rounded-[30px] flex flex-col items-center gap-5 px-6 py-8">
     <h1 class="text-4xl font-semibold text-[#141522]">Giriş yap</h1>
     <h3 class="text-2xl font-normal text-[#141522]">Bilgilerinizi onaylayın</h3>
     
@@ -89,6 +88,6 @@ const login = async () => {
       </button>
     </form>
 
-    <nuxt-link to="./register" class="text-[#9199B1] text-lg underline">Hesabınız yok mu? Kayıt olun!</nuxt-link>
+    <button @click="emit('change-tab', 'register')" class="text-[#9199B1] text-lg underline">Hesabınız yok mu? Kayıt olun!</button>
   </section>
 </template>
