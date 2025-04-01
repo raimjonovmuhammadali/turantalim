@@ -1,17 +1,10 @@
 <script setup lang="ts">
-definePageMeta({
-  layout: "auth",
-});
-
 import { ref, computed } from "vue";
 import axios from "axios";
-import { useRouter } from "vue-router";
 import { API_BASE_URL } from "@/utils/api";
 
-const router = useRouter();
 
 const form = ref({
-  username: '',
   firstName: "",
   lastName: "",
   phone: "",
@@ -25,7 +18,6 @@ const isLoading = ref(false);
 const errorMessage = ref("");
 
 const isFormValid = computed(() =>
-  form.value.username.trim() !== "" &&
   form.value.password.trim() !== "" &&
   form.value.confirmPassword.trim() !== "" &&
   form.value.password === form.value.confirmPassword
@@ -47,7 +39,6 @@ const registerUser = async () => {
 
   try {
     const response = await axios.post(`${API_BASE_URL}/user/register/`, {
-      username: form.value.username,
       first_name: form.value.firstName,
       last_name: form.value.lastName,
       phone: form.value.phone || null,
@@ -58,8 +49,7 @@ const registerUser = async () => {
 
     console.log("User registered:", response.data);
 
-    // Muvaffaqiyatli ro‘yxatdan o‘tganidan keyin login sahifasiga yo‘naltirish
-    router.push("./login");
+    emit('change-tab', 'login')
   } catch (error: any) {
     errorMessage.value = error.response?.data?.message || "Ro‘yxatdan o‘tishda xatolik yuz berdi!";
   } finally {
@@ -75,24 +65,21 @@ const emit = defineEmits(["change-tab"]);
     <h3 class="text-xl font-normal text-[#141522]">Bilgilerinizi onaylayın</h3>
 
     <form @submit.prevent="registerUser" class="w-full flex flex-col gap-4">
-      <input v-model="form.username" type="text" placeholder="Username"
-        class="w-full rounded-xl border-2 border-gray-300 outline-none p-3 bg-gray-100 text-gray-500 focus:border-blue-500 focus:text-black transition" />
-
       <input v-model="form.firstName" type="text" placeholder="Ad"
-        class="w-full rounded-xl border-2 border-gray-300 outline-none p-3 bg-gray-100 text-gray-500 focus:border-blue-500 focus:text-black transition" />
+        class="w-full rounded-xl border-2 border-gray-300 outline-none p-3 bg-gray-100 text-gray-500 focus:border-blue-500 focus:text-black transition" required/>
 
       <input v-model="form.lastName" type="text" placeholder="Soyad"
-        class="w-full rounded-xl border-2 border-gray-300 outline-none p-3 bg-gray-100 text-gray-500 focus:border-blue-500 focus:text-black transition" />
+        class="w-full rounded-xl border-2 border-gray-300 outline-none p-3 bg-gray-100 text-gray-500 focus:border-blue-500 focus:text-black transition" required/>
 
       <input v-model="form.phone" type="text" placeholder="Telefon numarası (Opsiyonel)"
-        class="w-full rounded-xl border-2 border-gray-300 outline-none p-3 bg-gray-100 text-gray-500 focus:border-blue-500 focus:text-black transition" />
+        class="w-full rounded-xl border-2 border-gray-300 outline-none p-3 bg-gray-100 text-gray-500 focus:border-blue-500 focus:text-black transition" required/>
 
       <input v-model="form.email" type="email" placeholder="E-posta adresi (Opsiyonel)"
-        class="w-full rounded-xl border-2 border-gray-300 outline-none p-3 bg-gray-100 text-gray-500 focus:border-blue-500 focus:text-black transition" />
+        class="w-full rounded-xl border-2 border-gray-300 outline-none p-3 bg-gray-100 text-gray-500 focus:border-blue-500 focus:text-black transition" required/>
 
       <div class="relative w-full">
         <input v-model="form.password" :type="showPassword ? 'text' : 'password'" placeholder="Yeni şifre"
-          class="w-full rounded-xl border-2 border-gray-300 outline-none p-3 pr-12 bg-gray-100 text-gray-500 focus:border-blue-500 focus:text-black transition" />
+          class="w-full rounded-xl border-2 border-gray-300 outline-none p-3 pr-12 bg-gray-100 text-gray-500 focus:border-blue-500 focus:text-black transition" required/>
 
         <button type="button" @click="togglePassword" class="absolute right-4 top-1/2 transform -translate-y-1/2 cursor-pointer">
           <SharedEyeClosed v-if="showPassword" />
@@ -102,7 +89,7 @@ const emit = defineEmits(["change-tab"]);
 
       <input v-model="form.confirmPassword" :type="showPassword ? 'text' : 'password'" placeholder="Şifreyi onaylayın"
         class="w-full rounded-xl border-2 outline-none p-3 pr-12 bg-gray-100 text-gray-500 focus:text-black transition"
-        :class="isPasswordMismatch ? 'border-red-500 text-red-500 focus:border-red-500' : 'border-gray-300 focus:border-blue-500'" />
+        :class="isPasswordMismatch ? 'border-red-500 text-red-500 focus:border-red-500' : 'border-gray-300 focus:border-blue-500'" required/>
 
       <!-- Xatolik xabari -->
       <p v-if="errorMessage" class="text-red-500 text-sm">{{ errorMessage }}</p>

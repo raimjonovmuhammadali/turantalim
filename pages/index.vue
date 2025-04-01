@@ -1,5 +1,152 @@
+<script setup lang="ts">
+import TestBox from "~/components/shared/TestBox.vue";
+import { useBox } from "~/types";
+
+const { boxes } = useBox();
+</script>
 <template>
-    <section>
-        hi
-    </section>
+  <header
+    class="w-full h-auto md:h-[100vh] bg-[#DBEFFF] py-5 flex flex-col justify-between"
+  >
+    <nav
+      class="w-[90%] mx-auto h-[10vh] p-4 flex items-center justify-between bg-white rounded-[30px] shadow-md"
+    >
+      <img
+        src="~/assets/images/logo.png"
+        alt="Logo"
+        class="h-10"
+        loading="lazy"
+      />
+      <ul class="flex items-center gap-5 font-[500] text-[20px]">
+        <li>
+          <nuxt-link to="/">Home</nuxt-link>
+        </li>
+        <li>
+          <nuxt-link to="/">Multilevel</nuxt-link>
+        </li>
+        <li>
+          <nuxt-link to="/">About</nuxt-link>
+        </li>
+      </ul>
+      <button
+        class="px-5 py-3 rounded-xl text-white font-medium bg-[#0C8CE9] cursor-pointer"
+      >
+        Ro'yhatdan o'tish
+      </button>
+    </nav>
+
+    <div
+      class="w-[90%] mx-auto flex flex-col md:flex-row items-center justify-between"
+    >
+      <div class="w-full md:w-6/12 text-center md:text-start">
+        <h1 class="text-[64px] text-[#141522] font-[600]">
+          Turk tilini 3oyda “Turan Ta’lim” bilan to‘liq o‘rganing!
+        </h1>
+        <button
+          class="mt-5 px-5 py-3 rounded-xl text-white font-medium bg-[#0C8CE9] cursor-pointer"
+        >
+          Ro'yhatdan o'tish
+        </button>
+      </div>
+      <div class="w-full md:w-6/12 flex items-center justify-end">
+        <img src="~/assets/images/banner.png" alt="banner img" loading="lazy" />
+      </div>
+    </div>
+  </header>
+  <main class="w-full">
+    <div
+      class="test-section w-[90%] mx-auto h-auto md:h-[600px] flex flex-col gap-10 justify-center"
+    >
+      <h1 class="text-[64px] font-[600] w-[400px]">Umumiy test sinovlari</h1>
+      <div class="tests-boxes flex gap-5 flex-wrap">
+        <TestBox v-for="box in boxes" :key="box.id" :box="box" />
+      </div>
+    </div>
+
+    <div
+      class="about w-full h-auto md:h-[600px] bg-[#DBEFFF] flex items-center"
+    >
+      <div
+        class="about-auto w-[90%] mx-auto flex flex-col md:flex-row items-center justify-center md:justify-between"
+      >
+        <div class="about-content w-full md:w-6/12 text-center md:text-start">
+          <h1 class="text-[60px] font-[600]">Biz haqimizda</h1>
+          <p>
+            Turan Ta'lim – Bilim Va Taraqqiyot Maskani Turan Ta'lim – sifatli va
+            innovatsion ta’limni ta’minlovchi zamonaviy platforma. Biz har bir
+            inson uchun bilim olish imkoniyatlarini kengaytirishga intilamiz.
+            Tajribali ustozlar, interaktiv darslar va samarali o‘qitish tizimi
+            orqali o‘quvchilarga qulay va samarali ta’lim muhitini yaratamiz.
+            Turan Ta'lim – kelajagingiz sari ishonchli qadam!
+          </p>
+        </div>
+        <div class="about-img w-full md:w-6/12">
+          <img src="~/assets/images/logo-about.png" alt="" />
+        </div>
+      </div>
+    </div>
+
+    <div
+      class="register-form w-full flex items-center justify-center h-auto md:h-[500px]"
+    >
+      <form action="" class="w-full md:w-[30%] text-center flex flex-col gap-4">
+        <h1 class="text-[30px] font-[600]">Kursga ro‘yxatdan o‘tish</h1>
+        <input
+          type="text"
+          placeholder="Ismingiz"
+          class="border border-[#e3e9ff] px-4 py-3 bg-[#EDEFF7] outline-none rounded-[15px]"
+        />
+        <input
+          type="text"
+          placeholder="Familiyangiz"
+          class="border border-[#e3e9ff] px-4 py-3 bg-[#EDEFF7] outline-none rounded-[15px]"
+        />
+        <input
+          type="text"
+          placeholder="+998"
+          class="border border-[#e3e9ff] px-4 py-3 bg-[#EDEFF7] outline-none rounded-[15px]"
+        />
+        <button
+          type="submit"
+          class="w-full rounded-xl p-3 text-white font-medium transition-opacity flex items-center justify-center bg-blue-600 hover:bg-blue-700 cursor-pointer"
+        >
+          Ro‘yxatdan o‘tish
+        </button>
+      </form>
+    </div>
+  </main>
+
+  <footer class="w-full h-[300px] bg-[#01042A]">
+        <div class="w-[90%] h-full mx-auto flex items-center justify-between">
+          <div class="copyright text-white text-[18px] flex flex-col gap-4">
+            <img src="~/assets/images/logo.png" alt="logo" loading="lazy" width="80px">
+            <h1>Turantalim</h1>
+            <p>Barcha huquqlar himoyalangan.</p>
+          </div>
+
+          <div class="contact text-white flex flex-col items-center gap-4">
+            <h1 class=" text-[18px]">Adminstrator bilan bog‘lanish</h1>
+            <a href="">+998 (90) 154-22-33</a>
+            <ul class="flex gap-5">
+              <li>
+                <a href="#"><img src="~/assets/svg/facebook.svg" alt="facebook" loading="lazy"></a>
+              </li>
+              <li>
+                <a href="#"><img src="~/assets/svg/instagram.svg" alt="instagram" loading="lazy"></a>
+              </li>
+              <li>
+                <a href="#"><img src="~/assets/svg/telegram.svg" alt="twitter" loading="lazy"></a>
+              </li>
+            </ul>
+          </div>
+
+          <div class="adress text-[18px] text-white flex flex-col items-end gap-4">
+            <span class="text-[14px]">Manzil</span>
+            <p>Farg’ona shahar,  A. <br> Navoiy 80B</p>
+            <span class="text-[14px]">Ish vaqtlari:</span>
+            <p>Dushanba — Juma <br>
+              9:00 — 18:00</p>
+          </div>
+        </div>
+  </footer>
 </template>

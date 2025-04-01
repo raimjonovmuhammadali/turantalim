@@ -1,19 +1,15 @@
 <script setup lang="ts">
-definePageMeta({
-  layout: "auth",
-});
-
 import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import { API_BASE_URL } from "@/utils/api"; // 🟢 BASE_URL import qilindi
 
 const router = useRouter();
-const username = ref("");
+const phone = ref("");
 const password = ref("");
 const showPassword = ref(false);
 const errorMessage = ref("");
 
-const isFormValid = computed(() => username.value.trim() !== "" && password.value.trim() !== "");
+const isFormValid = computed(() => phone.value.trim() !== "" && password.value.trim() !== "");
 
 const togglePassword = () => {
   showPassword.value = !showPassword.value;
@@ -23,33 +19,39 @@ const togglePassword = () => {
 interface LoginResponse {
   access: string;
   refresh: string;
-  username: string;
+  phone: string;
 }
 
 const login = async () => {
   errorMessage.value = "";
 
   try {
-    const response = await $fetch<LoginResponse>(`${API_BASE_URL}/user/login/`, { // 🟢 BASE_URL dan foydalanildi
+    const response = await $fetch<LoginResponse>(`${API_BASE_URL}/user/login/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: { username: username.value.trim(), password: password.value.trim() },
+      body: { phone: phone.value.trim(), password: password.value.trim() },
     });
 
     if (response.access && response.refresh) {
       localStorage.setItem("access_token", response.access);
       localStorage.setItem("refresh_token", response.refresh);
-      localStorage.setItem("username", username.value.trim());
+      localStorage.setItem("phone", phone.value.trim());
       await router.push("/profile/");
     } else {
-      errorMessage.value = "Login yoki parol noto‘g‘ri.";
+      errorMessage.value = "Giriş veya şifre hatalı.";
     }
   } catch (err: any) {
-    errorMessage.value = err.data?.message || "Serverga bog‘lanib bo‘lmadi.";
+    if (err.response?.status === 401) {
+      errorMessage.value = "Giriş veya şifre hatalı.";
+    } else {
+      errorMessage.value = err.data?.message || "Serverga bog‘lanib bo‘lmadi.";
+    }
   }
 };
+
 const emit = defineEmits(["change-tab"]);
 </script>
+
 <template>
   <section class="w-full  h-[511px] bg-white rounded-[30px] flex flex-col items-center gap-5 px-6 py-8">
     <h1 class="text-4xl font-semibold text-[#141522]">Giriş yap</h1>
@@ -57,9 +59,9 @@ const emit = defineEmits(["change-tab"]);
     
     <form class="w-full flex flex-col gap-5" @submit.prevent="login">
       <input
-        v-model="username"
+        v-model="phone"
         type="text"
-        placeholder="Kullanıcı adı"
+        placeholder="Telefon numarası"
         class="w-full h-[70px] rounded-xl border-2 border-[#EDEFF7] outline-none px-5 bg-[#F8F9FF] text-[#9199B1] focus:border-[#0C8CE9] focus:text-[#141522] transition"
       />
       

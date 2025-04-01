@@ -8,10 +8,10 @@ export const useProfileStore = defineStore("profile", {
   }),
   actions: {
     async fetchProfile() {
-      const username = localStorage.getItem("username");
+      const username = localStorage.getItem("phone");
       if (!username) {
         this.errorMessage = "Siz login qilmagansiz!";
-        return navigateTo("/auth/login");
+        return navigateTo("/auth/");
       }
 
       try {
@@ -43,7 +43,7 @@ export const useProfileStore = defineStore("profile", {
       localStorage.removeItem("profileData");
       localStorage.removeItem("access_token");
       localStorage.removeItem("refresh_token");
-      localStorage.removeItem("username");
+      localStorage.removeItem("phone");
       navigateTo("/auth/");
     },
   },
