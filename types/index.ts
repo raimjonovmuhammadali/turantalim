@@ -13,7 +13,7 @@ export interface Box {
       { id: 3,title: 'C1', hero: "Darajadagilar uchun", link: "/", color: "red" },
       { id: 4,title: 'A2', hero: "Darajadagilar uchun", link: "/", color: "blue" },
       { id: 5,title: 'B2', hero: "Darajadagilar uchun", link: "/", color: "green" },
-      { id: 6,title: 'Multilevel', hero: null, link: "/tests/multilevel", color: "orange" },
+      { id: 6,title: 'Multilevel', hero: null, link: "/tests/", color: "orange" },
     ]);
   
     return { boxes };

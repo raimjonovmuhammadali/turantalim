@@ -1,73 +1,75 @@
 <script setup>
-const nextTestOrder = ["listening", "writing", "reading", "speaking"];
-
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 
 const router = useRouter();
 const token = process.client ? localStorage.getItem("access_token") : null;
-const isTestStarted = ref(sessionStorage.getItem("isTestStarted") === "true");
 
+const isTestStarted = ref(sessionStorage.getItem("isTestStarted") === "true");
 const startTime = ref(Number(sessionStorage.getItem("startTime")) || null);
-const durationInSeconds = ref(null); // from API
+const durationInSeconds = ref(null);
 const remainingTime = ref(0);
 const timerInterval = ref(null);
 const selectedAnswers = ref(JSON.parse(sessionStorage.getItem("selectedAnswers")) || {});
+const nextTestOrder = ["reading", "writing"];
 
-// ✅ Fetch test data
+// Fetch test
 const { data, error } = await useFetch(
   "https://turantalim2.pythonanywhere.com/multilevel/test/",
   {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
-    query: { language: 2, level: "multilevel", test: "listening", exam_id: 1 },
+    query: { language: 2, level: "multilevel", test: "speaking", exam_id: 1 },
   }
 );
 
-if (error.value) {
-  alert("Test yuklanishda xatolik yuz berdi.");
-  router.push("/tests/multilevel/");
+// Agar serverdan xatolik bo‘lsa
+if (error.value || !data.value || !data.value?.part?.tests?.length) {
+  alert("❌ Test yuklanishda xatolik yuz berdi yoki testlar mavjud emas.");
+  router.push("/tests/multilevel/reading");
 }
 
-const testInfo = computed(() =>
-  data.value?.part
+const testInfo = computed(() => {
+  const part = data.value?.part;
+  return part
     ? {
-        title: data.value.part.exam.title,
+        title: part.exam.title,
         duration: data.value.duration,
-        level: data.value.part.level,
-        language: data.value.part.language.name,
-        partTitle: data.value.part.title,
+        level: part.level,
+        language: part.language.name,
+        partTitle: part.title,
       }
-    : null
-);
+    : null;
+});
 
 const tests = computed(() =>
   data.value?.part.tests?.map((test) => ({
     id: test.id,
     title: test.title,
     audio: test.audio,
-    questions: test.questions?.map((q) => ({
+    questions: test.questions.map((q) => ({
       id: q.id,
       text: q.text,
-      options: q.options?.map((opt) => ({
+      options: q.options.map((opt) => ({
         id: opt.id,
         text: opt.text,
-      })) || [],
-    })) || [],
+      })),
+    })),
   })) || []
 );
 
-// ⏱ Timer logic
+// TIMER
 const updateRemainingTime = () => {
   if (!startTime.value || !durationInSeconds.value) return;
   const elapsed = Math.floor((Date.now() - startTime.value) / 1000);
   remainingTime.value = durationInSeconds.value - elapsed;
   if (remainingTime.value <= 0) {
     clearInterval(timerInterval.value);
-    finishTest();
+    finishTest(); // Timeout bo‘lsa avtomatik yakunlash
   }
 };
 
 const startTimer = () => {
+  updateRemainingTime(); // Immediately update
   timerInterval.value = setInterval(updateRemainingTime, 1000);
 };
 
@@ -77,123 +79,97 @@ onMounted(() => {
     return;
   }
 
-  const interval = setInterval(() => {
+  const waitForData = setInterval(() => {
     if (testInfo.value) {
+      clearInterval(waitForData);
       durationInSeconds.value = testInfo.value.duration * 60;
+
       if (!startTime.value) {
         startTime.value = Date.now();
         sessionStorage.setItem("startTime", startTime.value);
       }
-      updateRemainingTime();
+
       startTimer();
-      clearInterval(interval);
     }
-  }, 300);
+  }, 200);
 });
 
 onUnmounted(() => {
   clearInterval(timerInterval.value);
 });
 
-// ✅ Answer select
+// Javob tanlash
 const selectAnswer = (questionId, optionId) => {
   selectedAnswers.value[questionId] = optionId;
   sessionStorage.setItem("selectedAnswers", JSON.stringify(selectedAnswers.value));
 };
 
-// ✅ Finish test
+// Testni yakunlash
 const finishTest = async () => {
   if (!confirm("Testni yakunlaysizmi?")) return;
   clearInterval(timerInterval.value);
 
   const test_result_id = data.value?.test_result_id;
-  if (!test_result_id) {
-    alert("Test ID topilmadi.");
-    return;
-  }
+  if (!test_result_id) return alert("Test ID topilmadi.");
 
-  const answers = Object.entries(selectedAnswers.value).map(([questionId, userOption]) => {
-    const test = tests.value.find((t) =>
-      t.questions.some((q) => q.id === Number(questionId))
-    );
-    const question = test?.questions.find((q) => q.id === Number(questionId));
-    const option = question?.options.find((opt) => opt.id === Number(userOption));
-
+  const answers = Object.entries(selectedAnswers.value).map(([qId, optId]) => {
+    const test = tests.value.find(t => t.questions.some(q => q.id === Number(qId)));
+    const question = test?.questions.find(q => q.id === Number(qId));
+    const option = question?.options.find(o => o.id === Number(optId));
     return {
-      question: Number(questionId),
-      user_option: Number(userOption),
-      user_answer: option?.text || String(userOption),
+      question: Number(qId),
+      user_option: Number(optId),
+      user_answer: option?.text || String(optId),
     };
   });
 
-  const payload = {
-    test_result_id,
-    answers,
-  };
-
   try {
-    const response = await fetch(
-      "https://turantalim2.pythonanywhere.com/multilevel/check-test/",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify(payload),
-      }
-    );
+    const res = await fetch("https://turantalim2.pythonanywhere.com/multilevel/check-test/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ test_result_id, answers }),
+    });
 
-    if (!response.ok) {
-      const text = await response.text();
-      alert(`Xatolik: ${text}`);
-      return;
-    }
+    if (!res.ok) return alert("Xatolik: " + (await res.text()));
 
-    const result = await response.json();
-    const correct = result.answers.filter((a) => a.is_correct).length;
+    const result = await res.json();
+    const correct = result.answers.filter(a => a.is_correct).length;
     const incorrect = result.answers.length - correct;
 
     const sectionTitle = testInfo.value?.partTitle.toLowerCase() || "unknown";
-    const testSummary = {
+    const prevResults = JSON.parse(localStorage.getItem("testResults") || "{}");
+    prevResults[sectionTitle] = {
       correct,
       incorrect,
       score: result.score,
       test_completed: result.test_completed,
     };
-
-    // Localga yozib qo'yamiz
-    const prevResults = JSON.parse(localStorage.getItem("testResults") || "{}");
-    prevResults[sectionTitle] = testSummary;
     localStorage.setItem("testResults", JSON.stringify(prevResults));
 
-    // Keyingi test aniqlanadi
-    const currentIndex = nextTestOrder.indexOf(sectionTitle);
-    const nextSection = nextTestOrder[currentIndex + 1];
+    sessionStorage.clear();
 
     alert(`✅ Test yakunlandi. To‘g‘ri: ${correct}, Xato: ${incorrect}`);
 
-    // sessionni tozalaymiz
-    sessionStorage.clear();
+    // Keyingi testga yoki natijaga o‘tish
+    const currentIndex = nextTestOrder.indexOf(sectionTitle);
+    const nextSection = nextTestOrder[currentIndex + 1] || "result";
 
-    // Keyingi testga yoki natijaga o'tamiz
     setTimeout(() => {
-      if (nextSection) {
-        router.push(`/tests/multilevel/${nextSection}`);
-      } else {
-        router.push("/tests/multilevel/result");
-      }
-    }, 300);
+      router.push(`/tests/multilevel/${nextSection}`);
+    }, 500);
 
-  } catch (error) {
-    console.error("❌ Xatolik:", error);
+  } catch (err) {
+    console.error(err);
     alert("Testni yakunlashda xatolik yuz berdi.");
   }
 };
-
-
-
 </script>
+
+
+
 
 
 <template>

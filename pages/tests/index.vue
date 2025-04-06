@@ -69,7 +69,7 @@ definePageMeta({
         </ul>
       </div>
 
-      <nuxt-link to="./listening" class="px-10 py-2 cursor-pointer bg-[#0C8CE9] rounded-[15px] text-white">İleri</nuxt-link>
+      <nuxt-link to="/tests/multilevel/" class="px-10 py-2 cursor-pointer bg-[#0C8CE9] rounded-[15px] text-white">İleri</nuxt-link>
     </div>
   </section>
 </template>

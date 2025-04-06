@@ -3,6 +3,7 @@ import TestBox from "~/components/shared/TestBox.vue";
 import { useBox } from "~/types";
 
 const { boxes } = useBox();
+const is_auth = localStorage.getItem("access_token");
 </script>
 <template>
   <header
@@ -28,25 +29,43 @@ const { boxes } = useBox();
           <nuxt-link to="/">About</nuxt-link>
         </li>
       </ul>
-      <button
+      <nuxt-link
+        to="/auth"
+        v-if="!is_auth"
         class="px-5 py-3 rounded-xl text-white font-medium bg-[#0C8CE9] cursor-pointer"
       >
         Ro'yhatdan o'tish
-      </button>
+      </nuxt-link>
+      <nuxt-link
+        to="/profile"
+        v-if="is_auth"
+        class="px-5 py-3 rounded-xl text-white font-medium bg-[#0C8CE9] cursor-pointer"
+      >
+        Profilim
+      </nuxt-link>
     </nav>
 
     <div
       class="w-[90%] mx-auto flex flex-col md:flex-row items-center justify-between"
     >
       <div class="w-full md:w-6/12 text-center md:text-start">
-        <h1 class="text-[64px] text-[#141522] font-[600]">
+        <h1 class="text-[64px] text-[#141522] font-[600] mb-5">
           Turk tilini 3oyda “Turan Ta’lim” bilan to‘liq o‘rganing!
         </h1>
-        <button
+        <nuxt-link
+          to="/auth"
+          v-if="!is_auth"
           class="mt-5 px-5 py-3 rounded-xl text-white font-medium bg-[#0C8CE9] cursor-pointer"
         >
           Ro'yhatdan o'tish
-        </button>
+        </nuxt-link>
+        <nuxt-link
+          to="/profile"
+          v-if="is_auth"
+          class="mt-5 px-5 py-3 rounded-xl text-white font-medium bg-[#0C8CE9] cursor-pointer"
+        >
+          Profilim
+        </nuxt-link>
       </div>
       <div class="w-full md:w-6/12 flex items-center justify-end">
         <img src="~/assets/images/banner.png" alt="banner img" loading="lazy" />
@@ -117,36 +136,61 @@ const { boxes } = useBox();
   </main>
 
   <footer class="w-full h-[300px] bg-[#01042A]">
-        <div class="w-[90%] h-full mx-auto flex items-center justify-between">
-          <div class="copyright text-white text-[18px] flex flex-col gap-4">
-            <img src="~/assets/images/logo.png" alt="logo" loading="lazy" width="80px">
-            <h1>Turantalim</h1>
-            <p>Barcha huquqlar himoyalangan.</p>
-          </div>
+    <div class="w-[90%] h-full mx-auto flex items-center justify-between">
+      <div class="copyright text-white text-[18px] flex flex-col gap-4">
+        <img
+          src="~/assets/images/logo.png"
+          alt="logo"
+          loading="lazy"
+          width="80px"
+        />
+        <h1>Turantalim</h1>
+        <p>Barcha huquqlar himoyalangan.</p>
+      </div>
 
-          <div class="contact text-white flex flex-col items-center gap-4">
-            <h1 class=" text-[18px]">Adminstrator bilan bog‘lanish</h1>
-            <a href="">+998 (90) 154-22-33</a>
-            <ul class="flex gap-5">
-              <li>
-                <a href="#"><img src="~/assets/svg/facebook.svg" alt="facebook" loading="lazy"></a>
-              </li>
-              <li>
-                <a href="#"><img src="~/assets/svg/instagram.svg" alt="instagram" loading="lazy"></a>
-              </li>
-              <li>
-                <a href="#"><img src="~/assets/svg/telegram.svg" alt="twitter" loading="lazy"></a>
-              </li>
-            </ul>
-          </div>
+      <div class="contact text-white flex flex-col items-center gap-4">
+        <h1 class="text-[18px]">Adminstrator bilan bog‘lanish</h1>
+        <a href="">+998 (90) 154-22-33</a>
+        <ul class="flex gap-5">
+          <li>
+            <a href="#"
+              ><img
+                src="~/assets/svg/facebook.svg"
+                alt="facebook"
+                loading="lazy"
+            /></a>
+          </li>
+          <li>
+            <a href="#"
+              ><img
+                src="~/assets/svg/instagram.svg"
+                alt="instagram"
+                loading="lazy"
+            /></a>
+          </li>
+          <li>
+            <a href="#"
+              ><img
+                src="~/assets/svg/telegram.svg"
+                alt="twitter"
+                loading="lazy"
+            /></a>
+          </li>
+        </ul>
+      </div>
 
-          <div class="adress text-[18px] text-white flex flex-col items-end gap-4">
-            <span class="text-[14px]">Manzil</span>
-            <p>Farg’ona shahar,  A. <br> Navoiy 80B</p>
-            <span class="text-[14px]">Ish vaqtlari:</span>
-            <p>Dushanba — Juma <br>
-              9:00 — 18:00</p>
-          </div>
-        </div>
+      <div class="adress text-[18px] text-white flex flex-col items-end gap-4">
+        <span class="text-[14px]">Manzil</span>
+        <p>
+          Farg’ona shahar, A. <br />
+          Navoiy 80B
+        </p>
+        <span class="text-[14px]">Ish vaqtlari:</span>
+        <p>
+          Dushanba — Juma <br />
+          9:00 — 18:00
+        </p>
+      </div>
+    </div>
   </footer>
 </template>
