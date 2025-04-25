@@ -152,6 +152,7 @@ const finishTest = async () => {
     const result = await res.json();
     const correct = result.answers.filter((a) => a.is_correct).length;
     const incorrect = result.answers.length - correct;
+    const score = ((correct / result.answers.length) * 100).toFixed(1);
 
     // Saqlash
     const sectionTitle = testInfo.value?.type || "unknown";
@@ -159,7 +160,7 @@ const finishTest = async () => {
     prevResults[sectionTitle] = {
       correct,
       incorrect,
-      score: result.score,
+      score: Number(score),
       test_completed: result.test_completed,
     };
     localStorage.setItem("testResults", JSON.stringify(prevResults));
@@ -168,7 +169,7 @@ const finishTest = async () => {
     sessionStorage.removeItem("startTime");
     sessionStorage.removeItem("selectedAnswers");
 
-    alert(`✅ Test yakunlandi. To‘g‘ri: ${correct}, Xato: ${incorrect}`);
+    alert(`✅ Test yakunlandi.\nTo‘g‘ri: ${correct}, Xato: ${incorrect}, Ball: ${score}%`);
 
     const currentIndex = nextTestOrder.indexOf(sectionTitle);
     const nextSection = nextTestOrder[currentIndex + 1] || "result";
@@ -218,23 +219,23 @@ const finishTest = async () => {
           <p class="font-medium">{{ question.text }}</p>
 
           <div v-if="question.hasOptions && question.options.length">
-            <div
-              v-for="option in question.options"
-              :key="option.key"
-              class="flex gap-2 mt-2 items-center"
+            <select
+              class="w-full p-2 border border-gray-300 rounded-md"
+              :value="selectedAnswers[question.id] || ''"
+              @change="(e) => selectAnswer(question.id, e.target.value)"
             >
-              <input
-                type="radio"
-                :id="`q${question.id}_opt${option.key}`"
-                :name="`q${question.id}`"
-                :checked="selectedAnswers[question.id] === option.key"
-                @change="selectAnswer(question.id, option.key)"
-              />
-              <label :for="`q${question.id}_opt${option.key}`"
-                >{{ option.key }}. {{ option.text }}</label
+              <option disabled value="">Variantni tanlang</option>
+              <option
+                v-for="option in question.options"
+                :key="option.key"
+                :value="option.key"
               >
-            </div>
+                {{ option.key }}. {{ option.text }}
+              </option>
+            </select>
           </div>
+
+          
 
           <div v-else class="mt-2">
             <textarea

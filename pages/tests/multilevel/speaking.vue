@@ -13,7 +13,7 @@ const timerInterval = ref(null);
 const selectedAnswers = ref(JSON.parse(sessionStorage.getItem("selectedAnswers")) || {});
 const nextTestOrder = ["reading", "writing"];
 
-// Fetch test
+// Fetch test data from API
 const { data, error } = await useFetch(
   "https://turantalim2.pythonanywhere.com/multilevel/test/",
   {
@@ -22,12 +22,13 @@ const { data, error } = await useFetch(
   }
 );
 
-// Agar serverdan xatolik bo‘lsa
-if (error.value || !data.value || !data.value?.part?.tests?.length) {
-  alert("❌ Test yuklanishda xatolik yuz berdi yoki testlar mavjud emas.");
+// Handle error or missing data
+if (error.value || !data.value?.part?.tests?.length) {
+  alert("❌ Test loading error or no tests available.");
   router.push("/tests/multilevel/reading");
 }
 
+// Derived information from the API response
 const testInfo = computed(() => {
   const part = data.value?.part;
   return part
@@ -45,31 +46,32 @@ const tests = computed(() =>
   data.value?.part.tests?.map((test) => ({
     id: test.id,
     title: test.title,
+    description: test.description,
+    image: test.picture,
     audio: test.audio,
     questions: test.questions.map((q) => ({
       id: q.id,
       text: q.text,
-      options: q.options.map((opt) => ({
-        id: opt.id,
-        text: opt.text,
-      })),
+      options: q.options || [],
+      image: q.picture,
+      hasOptions: q.has_options,
     })),
   })) || []
 );
 
-// TIMER
+// Timer functionality
 const updateRemainingTime = () => {
   if (!startTime.value || !durationInSeconds.value) return;
   const elapsed = Math.floor((Date.now() - startTime.value) / 1000);
   remainingTime.value = durationInSeconds.value - elapsed;
   if (remainingTime.value <= 0) {
     clearInterval(timerInterval.value);
-    finishTest(); // Timeout bo‘lsa avtomatik yakunlash
+    finishTest();
   }
 };
 
 const startTimer = () => {
-  updateRemainingTime(); // Immediately update
+  updateRemainingTime();
   timerInterval.value = setInterval(updateRemainingTime, 1000);
 };
 
@@ -98,24 +100,24 @@ onUnmounted(() => {
   clearInterval(timerInterval.value);
 });
 
-// Javob tanlash
+// Answer selection
 const selectAnswer = (questionId, optionId) => {
   selectedAnswers.value[questionId] = optionId;
   sessionStorage.setItem("selectedAnswers", JSON.stringify(selectedAnswers.value));
 };
 
-// Testni yakunlash
+// Finish the test
 const finishTest = async () => {
-  if (!confirm("Testni yakunlaysizmi?")) return;
+  if (!confirm("Do you want to finish the test?")) return;
   clearInterval(timerInterval.value);
 
   const test_result_id = data.value?.test_result_id;
-  if (!test_result_id) return alert("Test ID topilmadi.");
+  if (!test_result_id) return alert("Test ID not found.");
 
   const answers = Object.entries(selectedAnswers.value).map(([qId, optId]) => {
-    const test = tests.value.find(t => t.questions.some(q => q.id === Number(qId)));
-    const question = test?.questions.find(q => q.id === Number(qId));
-    const option = question?.options.find(o => o.id === Number(optId));
+    const test = tests.value.find((t) => t.questions.some((q) => q.id === Number(qId)));
+    const question = test?.questions.find((q) => q.id === Number(qId));
+    const option = question?.options.find((o) => o.id === Number(optId));
     return {
       question: Number(qId),
       user_option: Number(optId),
@@ -133,10 +135,10 @@ const finishTest = async () => {
       body: JSON.stringify({ test_result_id, answers }),
     });
 
-    if (!res.ok) return alert("Xatolik: " + (await res.text()));
+    if (!res.ok) return alert("Error: " + (await res.text()));
 
     const result = await res.json();
-    const correct = result.answers.filter(a => a.is_correct).length;
+    const correct = result.answers.filter((a) => a.is_correct).length;
     const incorrect = result.answers.length - correct;
 
     const sectionTitle = testInfo.value?.partTitle.toLowerCase() || "unknown";
@@ -151,9 +153,9 @@ const finishTest = async () => {
 
     sessionStorage.clear();
 
-    alert(`✅ Test yakunlandi. To‘g‘ri: ${correct}, Xato: ${incorrect}`);
+    alert(`✅ Test completed. Correct: ${correct}, Incorrect: ${incorrect}`);
 
-    // Keyingi testga yoki natijaga o‘tish
+    // Navigate to the next test or result
     const currentIndex = nextTestOrder.indexOf(sectionTitle);
     const nextSection = nextTestOrder[currentIndex + 1] || "result";
 
@@ -163,10 +165,11 @@ const finishTest = async () => {
 
   } catch (err) {
     console.error(err);
-    alert("Testni yakunlashda xatolik yuz berdi.");
+    alert("An error occurred while completing the test.");
   }
 };
 </script>
+
 
 
 
@@ -208,6 +211,14 @@ const finishTest = async () => {
         >
           <span class="font-medium">Soru {{ question.id }}:</span>
           <div
+            v-if="!question.hasOptions"
+            class="text-gray-700 py-2"
+          >
+            <p>{{ question.text }}</p>
+            <img v-if="question.image" :src="question.image" class="w-full h-auto rounded-md" />
+          </div>
+          <div
+            v-if="question.hasOptions"
             v-for="option in question.options"
             :key="option.id"
             class="answer w-full py-5 flex items-center gap-3 bg-[#e8ebffcd] px-5 rounded-[15px] border border-[#b0bdef]"
@@ -226,9 +237,9 @@ const finishTest = async () => {
 
       <button
         @click="finishTest"
-        class="px-6 py-2 cursor-pointer bg-red-600 rounded-[15px] text-white"
+        class="py-2 px-5 bg-blue-500 text-white rounded-full mt-4"
       >
-        Testni Yakunlash
+        Finish Test
       </button>
     </div>
   </section>

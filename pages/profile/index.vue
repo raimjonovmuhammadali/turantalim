@@ -42,7 +42,7 @@ const handleSubmit = async () => {
   try {
     const success = await profileStore.updateProfile(updatedData);
     if (success) {
-      alert("Profile updated")
+      alert("Ma'lumotlar yangilandi...")
     } else {
       throw new Error("Ma'lumotlarni yangilashda muammo yuz berdi.");
     }

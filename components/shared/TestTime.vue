@@ -19,10 +19,6 @@
 import { computed } from "vue";
 
 const props = defineProps({
-  imgSrc: {
-    type: String,
-    required: true,
-  },
   title: {
     type: String,
     required: true,

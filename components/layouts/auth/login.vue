@@ -4,12 +4,12 @@ import { useRouter } from "vue-router";
 import { API_BASE_URL } from "@/utils/api"; // 🟢 BASE_URL import qilindi
 
 const router = useRouter();
-const phone = ref("");
+const identifier = ref("");
 const password = ref("");
 const showPassword = ref(false);
 const errorMessage = ref("");
 
-const isFormValid = computed(() => phone.value.trim() !== "" && password.value.trim() !== "");
+const isFormValid = computed(() => identifier.value.trim() !== "" && password.value.trim() !== "");
 
 const togglePassword = () => {
   showPassword.value = !showPassword.value;
@@ -19,7 +19,7 @@ const togglePassword = () => {
 interface LoginResponse {
   access: string;
   refresh: string;
-  phone: string;
+  identifier: string;
 }
 
 const login = async () => {
@@ -29,13 +29,13 @@ const login = async () => {
     const response = await $fetch<LoginResponse>(`${API_BASE_URL}/user/login/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: { phone: phone.value.trim(), password: password.value.trim() },
+      body: { identifier: identifier.value.trim(), password: password.value.trim() },
     });
 
     if (response.access && response.refresh) {
       localStorage.setItem("access_token", response.access);
       localStorage.setItem("refresh_token", response.refresh);
-      localStorage.setItem("phone", phone.value.trim());
+      localStorage.setItem("phone", identifier.value.trim());
       await router.push("/profile/");
     } else {
       errorMessage.value = "Giriş veya şifre hatalı.";
@@ -59,7 +59,7 @@ const emit = defineEmits(["change-tab"]);
     
     <form class="w-full flex flex-col gap-5" @submit.prevent="login">
       <input
-        v-model="phone"
+        v-model="identifier"
         type="text"
         placeholder="Telefon numarası"
         class="w-full h-[70px] rounded-xl border-2 border-[#EDEFF7] outline-none px-5 bg-[#F8F9FF] text-[#9199B1] focus:border-[#0C8CE9] focus:text-[#141522] transition"
