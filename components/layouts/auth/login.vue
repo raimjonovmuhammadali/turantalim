@@ -35,7 +35,7 @@ const login = async () => {
     if (response.access && response.refresh) {
       localStorage.setItem("access_token", response.access);
       localStorage.setItem("refresh_token", response.refresh);
-      localStorage.setItem("phone", identifier.value.trim());
+      localStorage.setItem("identifier", identifier.value.trim());
       await router.push("/profile/");
     } else {
       errorMessage.value = "Giriş veya şifre hatalı.";
