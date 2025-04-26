@@ -7,32 +7,29 @@ const token = process.client ? localStorage.getItem("access_token") : null;
 
 const isTestStarted = ref(sessionStorage.getItem("isTestStarted") === "true");
 const startTime = ref(Number(sessionStorage.getItem("startTime")) || null);
+const timerInterval = ref(null);
 const durationInSeconds = ref(null);
 const remainingTime = ref(0);
-const timerInterval = ref(null);
-const selectedAnswers = ref(JSON.parse(sessionStorage.getItem("selectedAnswers")) || {});
-const nextTestOrder = ["speaking"];
+const fileInputs = ref({});
 
-// Redirect helper function
+// Fetch test data
+const { data, error } = await useFetch("https://turantalim2.pythonanywhere.com/multilevel/test/", {
+  headers: token ? { Authorization: `Bearer ${token}` } : {},
+  query: { language: 2, level: "multilevel", test: "writing", exam_id: 1 },
+});
+
+// Redirect function
 const redirectToMain = (message = "Xatolik yuz berdi.") => {
   alert(message);
   router.push("/tests/multilevel/");
 };
 
-// Fetch test data
-const { data, error } = await useFetch(
-  "https://turantalim2.pythonanywhere.com/multilevel/test/",
-  {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-    query: { language: 2, level: "multilevel", test: "writing", exam_id: 1 },
-  }
-);
-
-// Handle error or empty tests
+// Check fetch result
 if (error.value || !data.value?.part?.tests?.length) {
   redirectToMain("Test yuklanishda xatolik yoki testlar mavjud emas.");
 }
 
+// Computed properties
 const testInfo = computed(() => {
   const part = data.value?.part;
   return part
@@ -47,17 +44,17 @@ const testInfo = computed(() => {
     : null;
 });
 
-const tests = computed(() => {
-  return data.value?.part.tests?.map((test) => ({
+const tests = computed(() =>
+  data.value?.part.tests?.map((test) => ({
     ...test,
     questions: test.questions.map((q) => ({
       ...q,
       options: q.options || [],
     })),
-  })) || [];
-});
+  })) || []
+);
 
-// TIMER
+// Timer functions
 const updateRemainingTime = () => {
   if (!startTime.value || !durationInSeconds.value) return;
   const elapsed = Math.floor((Date.now() - startTime.value) / 1000);
@@ -65,7 +62,7 @@ const updateRemainingTime = () => {
 
   if (remainingTime.value <= 0) {
     clearInterval(timerInterval.value);
-    finishTest(); // Auto-finish
+    finishTest();
   }
 };
 
@@ -74,13 +71,13 @@ const startTimer = () => {
   timerInterval.value = setInterval(updateRemainingTime, 1000);
 };
 
-// INIT
+// Lifecycle
 onMounted(() => {
   if (!isTestStarted.value) return redirectToMain();
 
-  const waitForData = setInterval(() => {
+  const wait = setInterval(() => {
     if (testInfo.value) {
-      clearInterval(waitForData);
+      clearInterval(wait);
       durationInSeconds.value = testInfo.value.duration * 60;
 
       if (!startTime.value) {
@@ -93,76 +90,65 @@ onMounted(() => {
   }, 100);
 });
 
-onUnmounted(() => clearInterval(timerInterval.value));
+onUnmounted(() => {
+  clearInterval(timerInterval.value);
+});
 
-// Answer selection
-const selectAnswer = (questionId, value) => {
-  selectedAnswers.value[questionId] = value;
-  sessionStorage.setItem("selectedAnswers", JSON.stringify(selectedAnswers.value));
+// File upload handler
+const handleFileChange = (questionId, event) => {
+  const file = event.target.files[0];
+  if (file) {
+    fileInputs.value[questionId] = file;
+  }
 };
 
-// Finish the test
+// Finish test
 const finishTest = async () => {
   if (!confirm("Testni yakunlaysizmi?")) return;
   clearInterval(timerInterval.value);
-
+  
   const test_result_id = data.value?.test_result_id;
+  localStorage.setItem('id', test_result_id);
   if (!test_result_id) return redirectToMain("Test ID topilmadi.");
 
-  const answers = Object.entries(selectedAnswers.value).map(([qId, value]) => ({
-    question: Number(qId),
-    user_option: Number(value) || null,
-    user_answer: String(value),
-  }));
-
   try {
-    const res = await fetch("https://turantalim2.pythonanywhere.com/multilevel/check-test/", {
+    const formData = new FormData();
+
+    for (const [questionId, file] of Object.entries(fileInputs.value)) {
+      if (!file) continue;
+      formData.append("writing_image", file);
+      formData.append("test_result_id", test_result_id);
+      formData.append("question", questionId);
+    }
+
+    const res = await fetch("https://turantalim2.pythonanywhere.com/multilevel/testcheck/writing/", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      body: JSON.stringify({ test_result_id, answers }),
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
     });
 
-    if (!res.ok) return redirectToMain("Natija jo‘natishda xatolik: " + (await res.text()));
+    if (!res.ok) return redirectToMain("Natija yuborishda xatolik: " + (await res.text()));
 
-    const result = await res.json();
-    const correct = result.answers.filter((a) => a.is_correct).length;
-    const incorrect = result.answers.length - correct;
+    const resultData = await res.json();
 
-    // Save results to localStorage
-    const sectionTitle = testInfo.value?.type || "unknown";
-    const prevResults = JSON.parse(localStorage.getItem("testResults") || "{}");
-    prevResults[sectionTitle] = {
-      correct,
-      incorrect,
-      score: result.score,
-      test_completed: result.test_completed,
-    };
-    localStorage.setItem("testResults", JSON.stringify(prevResults));
+    // ✅ Save result to localStorage
+    localStorage.setItem("writing_result", JSON.stringify(resultData));
 
+    // Cleanup session
     sessionStorage.setItem("isTestStarted", "true");
     sessionStorage.removeItem("startTime");
-    sessionStorage.removeItem("selectedAnswers");
 
-    alert(`✅ Test yakunlandi. To‘g‘ri: ${correct}, Xato: ${incorrect}`);
+    alert("✅ Test yakunlandi. Keyingi bo'limga o'tiladi.");
 
-    const currentIndex = nextTestOrder.indexOf(sectionTitle);
-    const nextSection = nextTestOrder[currentIndex + 1] || "result";
+    // 🔥 Redirect to speaking test
+    router.push("/tests/multilevel/speaking");
 
-    router.push(`/tests/multilevel/${nextSection}`);
   } catch (err) {
     console.error(err);
     redirectToMain("Testni yakunlashda xatolik yuz berdi.");
   }
 };
 </script>
-
-
-
-
-
 
 
 <template>
@@ -173,7 +159,6 @@ const finishTest = async () => {
       :remainingTime="remainingTime"
       :totalTime="testInfo.duration * 60"
     />
-  
     <div class="test-content w-[90%] mx-auto bg-white rounded-[30px] flex flex-col items-center py-5 gap-3">
       <div v-for="test in tests" :key="test.id" class="w-[80%] flex flex-col gap-4">
         <h2 class="text-xl font-semibold">{{ test.title }}</h2>
@@ -182,43 +167,25 @@ const finishTest = async () => {
 
         <div v-if="test.text_title" class="font-bold">{{ test.text_title }}</div>
         <div v-if="test.text" class="bg-gray-100 p-4 rounded-md whitespace-pre-line">{{ test.text }}</div>
-  
+
         <div v-for="question in test.questions" :key="question.id" class="mt-4">
           <p class="font-medium">{{ question.text }}</p>
 
-          <div v-if="!question.hasOptions">
-            <textarea
-              class="w-full p-2 border border-gray-300 rounded-md"
-              rows="3"
-              :value="selectedAnswers[question.id] || ''"
-              @input="(e) => selectAnswer(question.id, e.target.value)"
-              placeholder="Javobingizni kiriting..."
-            />
-          </div>
-
-          <div v-else class="mt-2">
-            <div v-for="option in question.options" :key="option.id" class="flex gap-2 mt-2 items-center">
-              <input
-                type="radio"
-                :id="`q${question.id}_opt${option.id}`"
-                :name="`q${question.id}`"
-                :checked="selectedAnswers[question.id] === option.id"
-                @change="selectAnswer(question.id, option.id)"
-              />
-              <label :for="`q${question.id}_opt${option.id}`">{{ option.text }}</label>
-            </div>
-          </div>
+          <input
+            type="file"
+            accept="image/*"
+            @change="(e) => handleFileChange(question.id, e)"
+            class="mt-2"
+          />
         </div>
       </div>
-  
+
       <button
         @click="finishTest"
-        class="mt-6 px-6 py-2 cursor-pointer bg-red-600 rounded-[15px] text-white"
+        class="mt-6 px-6 py-2 bg-red-600 rounded-[15px] text-white cursor-pointer hover:bg-red-700 transition"
       >
         Testni Yakunlash
       </button>
     </div>
   </section>
 </template>
-
-  

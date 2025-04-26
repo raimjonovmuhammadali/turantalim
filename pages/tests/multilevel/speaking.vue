@@ -126,7 +126,7 @@ const finishTest = async () => {
   });
 
   try {
-    const res = await fetch("https://turantalim2.pythonanywhere.com/multilevel/check-test/", {
+    const res = await fetch("https://turantalim2.pythonanywhere.com/multilevel/testcheck/speaking/", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
