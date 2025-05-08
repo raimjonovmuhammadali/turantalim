@@ -18,7 +18,7 @@ const is_auth = localStorage.getItem("access_token");
         class="h-10"
         loading="lazy"
       />
-      <ul class="flex items-center gap-5 font-[500] text-[20px]">
+      <ul class="hidden md:flex items-center gap-5 font-[500] text-[20px]">
         <li>
           <nuxt-link to="/">Home</nuxt-link>
         </li>
@@ -46,10 +46,10 @@ const is_auth = localStorage.getItem("access_token");
     </nav>
 
     <div
-      class="w-[90%] mx-auto flex flex-col md:flex-row items-center justify-between"
+      class="w-[90%] mx-auto flex flex-col md:flex-row items-center justify-between py-5 md:py-0"
     >
       <div class="w-full md:w-6/12 text-center md:text-start">
-        <h1 class="text-[64px] text-[#141522] font-[600] mb-5">
+        <h1 class="text-[40px] md:text-[64px] text-[#141522] font-[600] mb-5">
           Turk tilini 3oyda “Turan Ta’lim” bilan to‘liq o‘rganing!
         </h1>
         <nuxt-link
@@ -67,7 +67,7 @@ const is_auth = localStorage.getItem("access_token");
           Profilim
         </nuxt-link>
       </div>
-      <div class="w-full md:w-6/12 flex items-center justify-end">
+      <div class="w-full md:w-6/12 hidden md:flex items-center justify-end">
         <img src="~/assets/images/banner.png" alt="banner img" loading="lazy" />
       </div>
     </div>
@@ -76,14 +76,14 @@ const is_auth = localStorage.getItem("access_token");
     <div
       class="test-section w-[90%] mx-auto h-auto md:h-[600px] flex flex-col gap-10 justify-center"
     >
-      <h1 class="text-[64px] font-[600] w-[400px]">Umumiy test sinovlari</h1>
+      <h1 class="text-[30px] md:text-[50px] font-[600] ">Umumiy test sinovlari</h1>
       <div class="tests-boxes flex gap-5 flex-wrap">
         <TestBox v-for="box in boxes" :key="box.id" :box="box" />
       </div>
     </div>
 
     <div
-      class="about w-full h-auto md:h-[600px] bg-[#DBEFFF] flex items-center"
+      class="about w-full h-auto md:h-[600px] bg-[#DBEFFF] flex flex-col-reverse md:flex-row items-center py-5 md:py-0"
     >
       <div
         class="about-auto w-[90%] mx-auto flex flex-col md:flex-row items-center justify-center md:justify-between"
@@ -106,7 +106,7 @@ const is_auth = localStorage.getItem("access_token");
     </div>
 
     <div
-      class="register-form w-full flex items-center justify-center h-auto md:h-[500px]"
+      class="register-form w-full flex items-center justify-center h-auto md:h-[500px] p-5 md:p-0"
     >
       <form action="" class="w-full md:w-[30%] text-center flex flex-col gap-4">
         <h1 class="text-[30px] font-[600]">Kursga ro‘yxatdan o‘tish</h1>
@@ -135,9 +135,9 @@ const is_auth = localStorage.getItem("access_token");
     </div>
   </main>
 
-  <footer class="w-full h-[300px] bg-[#01042A]">
-    <div class="w-[90%] h-full mx-auto flex items-center justify-between">
-      <div class="copyright text-white text-[18px] flex flex-col gap-4">
+  <footer class="w-full h-auto md:h-[300px] bg-[#01042A] py-5 md:py-0">
+    <div class="w-[90%] h-full mx-auto flex flex-col md:flex-row items-center justify-between text-center md:text-start">
+      <div class="w-full copyright text-white text-[18px] flex flex-col gap-4 items-center md:items-start">
         <img
           src="~/assets/images/logo.png"
           alt="logo"
@@ -148,7 +148,7 @@ const is_auth = localStorage.getItem("access_token");
         <p>Barcha huquqlar himoyalangan.</p>
       </div>
 
-      <div class="contact text-white flex flex-col items-center gap-4">
+      <div class="w-full contact text-white flex flex-col items-center gap-4">
         <h1 class="text-[18px]">Adminstrator bilan bog‘lanish</h1>
         <a href="">+998 (90) 154-22-33</a>
         <ul class="flex gap-5">
@@ -179,7 +179,7 @@ const is_auth = localStorage.getItem("access_token");
         </ul>
       </div>
 
-      <div class="adress text-[18px] text-white flex flex-col items-end gap-4">
+      <div class="w-full adress text-[18px] text-white flex flex-col items-center md:items-end gap-4 text-center md:text-start">
         <span class="text-[14px]">Manzil</span>
         <p>
           Farg’ona shahar, A. <br />

@@ -13,7 +13,7 @@ const toggleUser = () => {
   >
     <div class="w-[90%] mx-auto flex flex-col justify-start gap-5">
       <LayoutsProfileNavbar @toggle-user="toggleUser" />
-      <LayoutsProfileUser v-if="isUserVisible"/>
+      <LayoutsProfileUser v-if="isUserVisible" class="z-10"/>
       <slot />
     </div>
   </section>

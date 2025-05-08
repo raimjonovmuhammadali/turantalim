@@ -5,7 +5,9 @@ import { useRouter } from "vue-router";
 const router = useRouter();
 const token = process.client ? localStorage.getItem("access_token") : null;
 
-const isTestStarted = ref(sessionStorage.getItem("isTestStarted") === "true");
+const isTestStarted = ref(false);
+const isTestFinished = ref(false);
+
 const startTime = ref(Number(sessionStorage.getItem("startTime")) || null);
 const durationInSeconds = ref(null);
 const remainingTime = ref(0);
@@ -17,7 +19,7 @@ const nextTestOrder = ["writing"];
 
 const redirectToMain = (message = "Xatolik yuz berdi.") => {
   alert(message);
-  router.push("/tests/multilevel/");
+  router.push("/tests/multilevel/writing");
 };
 
 // Fetch test
@@ -29,7 +31,7 @@ const { data, error } = await useFetch(
   }
 );
 
-// Agar xatolik bo‘lsa yoki testlar yo‘q bo‘lsa — chiqish
+// If error or no tests, redirect
 if (error.value || !data.value?.part?.tests?.length) {
   redirectToMain("Test yuklanishda xatolik yoki testlar mavjud emas.");
 }
@@ -89,7 +91,9 @@ const startTimer = () => {
 
 // INIT
 onMounted(() => {
-  if (!isTestStarted.value) return redirectToMain();
+  // Mark the test as started
+  isTestStarted.value = true;
+  sessionStorage.setItem("isTestStarted", "true");
 
   const waitForData = setInterval(() => {
     if (testInfo.value) {
@@ -108,7 +112,7 @@ onMounted(() => {
 
 onUnmounted(() => clearInterval(timerInterval.value));
 
-// Javob tanlash
+// Answer selection
 const selectAnswer = (questionId, value) => {
   selectedAnswers.value[questionId] = value;
   sessionStorage.setItem(
@@ -117,7 +121,7 @@ const selectAnswer = (questionId, value) => {
   );
 };
 
-// Testni yakunlash
+// Finish the test
 const finishTest = async () => {
   if (!confirm("Testni yakunlaysizmi?")) return;
   clearInterval(timerInterval.value);
@@ -150,11 +154,11 @@ const finishTest = async () => {
       );
 
     const result = await res.json();
+    const total = result.answers.length;
     const correct = result.answers.filter((a) => a.is_correct).length;
-    const incorrect = result.answers.length - correct;
-    const score = ((correct / result.answers.length) * 100).toFixed(1);
+    const incorrect = total - correct;
+    const score = ((correct / total) * 100).toFixed(1);
 
-    // Saqlash
     const sectionTitle = testInfo.value?.type || "unknown";
     const prevResults = JSON.parse(localStorage.getItem("testResults") || "{}");
     prevResults[sectionTitle] = {
@@ -165,15 +169,16 @@ const finishTest = async () => {
     };
     localStorage.setItem("testResults", JSON.stringify(prevResults));
 
+    // Clear flags and session data
     sessionStorage.setItem("isTestStarted", "true");
     sessionStorage.removeItem("startTime");
     sessionStorage.removeItem("selectedAnswers");
 
     alert(`✅ Test yakunlandi.\nTo‘g‘ri: ${correct}, Xato: ${incorrect}, Ball: ${score}%`);
 
+    // Go to the next test or results page
     const currentIndex = nextTestOrder.indexOf(sectionTitle);
     const nextSection = nextTestOrder[currentIndex + 1] || "result";
-
     router.push(`/tests/multilevel/${nextSection}`);
   } catch (err) {
     console.error(err);
@@ -192,14 +197,14 @@ const finishTest = async () => {
     />
 
     <div
-      class="test-content w-[90%] mx-auto bg-white rounded-[30px] flex flex-col items-center py-5 gap-3"
+      class="test-content w-[95%] mx-auto bg-white rounded-[30px] flex flex-col items-center py-5 gap-3"
     >
       <div
         v-for="test in tests"
         :key="test.id"
-        class="w-[80%] flex flex-col gap-4"
+        class="w-[90%] flex flex-col gap-4"
       >
-        <h2 class="text-xl font-semibold">{{ test.title }}</h2>
+        <h2 class="text-xl font-semibold text-center">{{ test.title }}</h2>
         <p class="text-sm italic">{{ test.description }}</p>
         <p v-if="test.constraints" class="text-xs text-gray-500">
           {{ test.constraints }}
@@ -224,7 +229,7 @@ const finishTest = async () => {
               :value="selectedAnswers[question.id] || ''"
               @change="(e) => selectAnswer(question.id, e.target.value)"
             >
-              <option disabled value="">Variantni tanlang</option>
+              <option disabled value="">Cevaplardan birini seçin.</option>
               <option
                 v-for="option in question.options"
                 :key="option.key"
@@ -234,8 +239,6 @@ const finishTest = async () => {
               </option>
             </select>
           </div>
-
-          
 
           <div v-else class="mt-2">
             <textarea

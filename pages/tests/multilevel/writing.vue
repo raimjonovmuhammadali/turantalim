@@ -1,191 +1,261 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
+import { useFetch } from "#app";
 
 const router = useRouter();
 const token = process.client ? localStorage.getItem("access_token") : null;
 
-const isTestStarted = ref(sessionStorage.getItem("isTestStarted") === "true");
-const startTime = ref(Number(sessionStorage.getItem("startTime")) || null);
-const timerInterval = ref(null);
-const durationInSeconds = ref(null);
+const isLoading = ref(false);
+const showFinishButton = ref(false);
+const fileInputRef = ref(null);
+const writingAnswers = ref([]);
+const currentTestIndex = ref(0);
+const currentQuestionIndex = ref(0);
+const allQuestions = ref([]);
+const startTime = ref(Date.now());
 const remainingTime = ref(0);
-const fileInputs = ref({});
+const timerInterval = ref(null);
+const durationInSeconds = ref(0);
 
-// Fetch test data
-const { data, error } = await useFetch("https://turantalim2.pythonanywhere.com/multilevel/test/", {
-  headers: token ? { Authorization: `Bearer ${token}` } : {},
-  query: { language: 2, level: "multilevel", test: "writing", exam_id: 1 },
-});
-
-// Redirect function
-const redirectToMain = (message = "Xatolik yuz berdi.") => {
-  alert(message);
-  router.push("/tests/multilevel/");
-};
-
-// Check fetch result
-if (error.value || !data.value?.part?.tests?.length) {
-  redirectToMain("Test yuklanishda xatolik yoki testlar mavjud emas.");
-}
-
-// Computed properties
-const testInfo = computed(() => {
-  const part = data.value?.part;
-  return part
-    ? {
-        title: part.exam.title,
-        duration: data.value.duration,
-        level: part.level,
-        language: part.language.name,
-        partTitle: part.title,
-        type: part.type,
-      }
-    : null;
-});
-
-const tests = computed(() =>
-  data.value?.part.tests?.map((test) => ({
-    ...test,
-    questions: test.questions.map((q) => ({
-      ...q,
-      options: q.options || [],
-    })),
-  })) || []
+const { data, error } = await useFetch(
+  "https://turantalim2.pythonanywhere.com/multilevel/test/",
+  {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    query: { language: 2, level: "multilevel", test: "writing", exam_id: 1 },
+  }
 );
 
-// Timer functions
+if (error.value || !data.value?.part?.tests?.length) {
+  alert("Testlar yuklanmadi.");
+  router.push("/tests/multilevel/");
+}
+
+const tests = data.value.part.tests;
+tests.forEach((test, testIdx) => {
+  test.questions.forEach((q, qIdx) => {
+    allQuestions.value.push({
+      id: q.id,
+      text: q.text,
+      test_id: test.id,
+      testIndex: testIdx,
+      questionIndex: qIdx,
+    });
+  });
+});
+
+durationInSeconds.value = data.value.duration * 60;
+
+const currentQuestion = computed(() => {
+  return allQuestions.value.find(
+    (q) =>
+      q.testIndex === currentTestIndex.value &&
+      q.questionIndex === currentQuestionIndex.value
+  );
+});
+
+const getUploadedFile = (questionId) => {
+  return writingAnswers.value.find((a) => a.question === questionId)
+    ?.writing_image;
+};
+
+const uploadedFile = computed(() => {
+  const file = getUploadedFile(currentQuestion.value?.id);
+  return file instanceof File ? URL.createObjectURL(file) : null;
+});
+
 const updateRemainingTime = () => {
-  if (!startTime.value || !durationInSeconds.value) return;
   const elapsed = Math.floor((Date.now() - startTime.value) / 1000);
   remainingTime.value = durationInSeconds.value - elapsed;
-
   if (remainingTime.value <= 0) {
     clearInterval(timerInterval.value);
-    finishTest();
+    finishTest(true);
   }
 };
 
-const startTimer = () => {
-  updateRemainingTime();
-  timerInterval.value = setInterval(updateRemainingTime, 1000);
-};
-
-// Lifecycle
 onMounted(() => {
-  if (!isTestStarted.value) return redirectToMain();
+  timerInterval.value = setInterval(updateRemainingTime, 1000);
 
-  const wait = setInterval(() => {
-    if (testInfo.value) {
-      clearInterval(wait);
-      durationInSeconds.value = testInfo.value.duration * 60;
+  const saved = JSON.parse(localStorage.getItem("testResults") || "{}");
+  const isDone = saved?.[data.value?.test_result_id]?.is_writing;
 
-      if (!startTime.value) {
-        startTime.value = Date.now();
-        sessionStorage.setItem("startTime", startTime.value);
-      }
-
-      startTimer();
-    }
-  }, 100);
+  if (isDone) {
+    alert("Writing testi allaqachon yakunlangan.");
+    router.push("/tests/multilevel/speaking");
+  }
 });
 
 onUnmounted(() => {
   clearInterval(timerInterval.value);
 });
 
-// File upload handler
-const handleFileChange = (questionId, event) => {
+const handleFileChange = (event) => {
   const file = event.target.files[0];
-  if (file) {
-    fileInputs.value[questionId] = file;
+  if (!file || !currentQuestion.value) return;
+
+  if (file.size > 5 * 1024 * 1024) {
+    alert("Fayl hajmi 5MB dan oshmasligi kerak.");
+    return;
+  }
+
+  if (!["image/jpeg", "image/png"].includes(file.type)) {
+    alert("Faqat JPG va PNG fayllar qabul qilinadi.");
+    return;
+  }
+
+  const existing = writingAnswers.value.find(
+    (a) => a.question === currentQuestion.value.id
+  );
+  if (existing) {
+    existing.writing_image = file;
+  } else {
+    writingAnswers.value.push({
+      question: currentQuestion.value.id,
+      writing_image: file,
+    });
+  }
+
+  fileInputRef.value.value = null;
+};
+
+const nextQuestion = () => {
+  if (!getUploadedFile(currentQuestion.value.id)) {
+    alert("❌ Iltimos, fayl yuklang.");
+    return;
+  }
+
+  const test = tests[currentTestIndex.value];
+  const isLastQuestionInTest =
+    currentQuestionIndex.value >= test.questions.length - 1;
+
+  if (isLastQuestionInTest) {
+    const isLastTest = currentTestIndex.value >= tests.length - 1;
+    if (isLastTest) {
+      showFinishButton.value = true;
+      return;
+    }
+    currentTestIndex.value++;
+    currentQuestionIndex.value = 0;
+  } else {
+    currentQuestionIndex.value++;
   }
 };
 
-// Finish test
-const finishTest = async () => {
-  if (!confirm("Testni yakunlaysizmi?")) return;
-  clearInterval(timerInterval.value);
-  
+const finishTest = async (auto = false) => {
+  if (!auto && !confirm("Testni yakunlaysizmi?")) return;
+
   const test_result_id = data.value?.test_result_id;
-  localStorage.setItem('id', test_result_id);
-  if (!test_result_id) return redirectToMain("Test ID topilmadi.");
+  if (!test_result_id) {
+    alert("Test natija ID topilmadi.");
+    return;
+  }
 
   try {
+    isLoading.value = true;
+
     const formData = new FormData();
+    formData.append("test_result_id", test_result_id);
 
-    for (const [questionId, file] of Object.entries(fileInputs.value)) {
-      if (!file) continue;
-      formData.append("writing_image", file);
-      formData.append("test_result_id", test_result_id);
-      formData.append("question", questionId);
-    }
-
-    const res = await fetch("https://turantalim2.pythonanywhere.com/multilevel/testcheck/writing/", {
-      method: "POST",
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-      body: formData,
+    writingAnswers.value.forEach((answer, index) => {
+      formData.append(`answers[${index}][question]`, answer.question);
+      formData.append(
+        `answers[${index}][writing_image]`,
+        answer.writing_image
+      );
     });
 
-    if (!res.ok) return redirectToMain("Natija yuborishda xatolik: " + (await res.text()));
+    const res = await fetch(
+      "https://turantalim2.pythonanywhere.com/multilevel/testcheck/writing/",
+      {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData,
+      }
+    );
 
-    const resultData = await res.json();
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.detail || "Xatolik yuz berdi.");
+    }
 
-    // ✅ Save result to localStorage
-    localStorage.setItem("writing_result", JSON.stringify(resultData));
+    const result = await res.json();
+    const { score, is_passed } = result;
 
-    // Cleanup session
-    sessionStorage.setItem("isTestStarted", "true");
-    sessionStorage.removeItem("startTime");
+    // LocalStorage ga test natijalarini saqlash
+    const saved = JSON.parse(localStorage.getItem("testResults") || "{}");
 
-    alert("✅ Test yakunlandi. Keyingi bo'limga o'tiladi.");
+    saved.writing = {
+      score: score || 50, // If score is not available, default to 50
+      is_writing: true,
+    };
 
-    // 🔥 Redirect to speaking test
+    localStorage.setItem("testResults", JSON.stringify(saved));
+
+    alert("✅ Test yakunlandi.");
     router.push("/tests/multilevel/speaking");
-
-  } catch (err) {
-    console.error(err);
-    redirectToMain("Testni yakunlashda xatolik yuz berdi.");
+  } catch (e) {
+    alert(e.message || "Yakunlashda xatolik.");
+  } finally {
+    isLoading.value = false;
   }
 };
 </script>
 
-
 <template>
-  <section class="w-full bg-[#DBEFFF] py-5 flex flex-col gap-5">
+  <section class="w-full py-6 px-4 flex flex-col items-center bg-[#f0f9ff] min-h-screen">
     <SharedTestTime
-      v-if="testInfo"
-      :title="testInfo.type"
+      v-if="data"
+      title="Writing"
       :remainingTime="remainingTime"
-      :totalTime="testInfo.duration * 60"
+      :totalTime="data.duration * 60"
+      class="sticky top-0 z-10"
     />
-    <div class="test-content w-[90%] mx-auto bg-white rounded-[30px] flex flex-col items-center py-5 gap-3">
-      <div v-for="test in tests" :key="test.id" class="w-[80%] flex flex-col gap-4">
-        <h2 class="text-xl font-semibold">{{ test.title }}</h2>
-        <p class="text-sm italic">{{ test.description }}</p>
-        <p v-if="test.constraints" class="text-xs text-gray-500">{{ test.constraints }}</p>
 
-        <div v-if="test.text_title" class="font-bold">{{ test.text_title }}</div>
-        <div v-if="test.text" class="bg-gray-100 p-4 rounded-md whitespace-pre-line">{{ test.text }}</div>
+    <div
+      v-if="isLoading"
+      class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-10"
+    >
+      <div class="bg-white p-4 rounded-lg text-center">Yuklanmoqda...</div>
+    </div>
 
-        <div v-for="question in test.questions" :key="question.id" class="mt-4">
-          <p class="font-medium">{{ question.text }}</p>
+    <div
+      v-else-if="currentQuestion"
+      class="bg-white rounded-2xl shadow-xl p-6 max-w-xl w-full mt-6"
+    >
+      <h2 class="text-xl font-bold mb-2">{{ currentQuestion.text }}</h2>
+      <p class="text-sm text-gray-500 mb-4">
+        Test {{ currentTestIndex + 1 }} | Savol {{ currentQuestionIndex + 1 }}
+      </p>
 
-          <input
-            type="file"
-            accept="image/*"
-            @change="(e) => handleFileChange(question.id, e)"
-            class="mt-2"
-          />
-        </div>
+      <input
+        ref="fileInputRef"
+        type="file"
+        accept="image/jpeg,image/png"
+        @change="handleFileChange"
+        class="mb-4"
+      />
+
+      <div v-if="uploadedFile" class="mb-4">
+        <p class="text-sm font-medium mb-1">📷 Yuklangan rasm:</p>
+        <img :src="uploadedFile" class="max-h-60 rounded border" />
       </div>
 
-      <button
-        @click="finishTest"
-        class="mt-6 px-6 py-2 bg-red-600 rounded-[15px] text-white cursor-pointer hover:bg-red-700 transition"
-      >
-        Testni Yakunlash
-      </button>
+      <div class="flex justify-end gap-4">
+        <button
+          v-if="!showFinishButton"
+          @click="nextQuestion"
+          class="bg-blue-600 text-white py-2 px-6 rounded-full hover:bg-blue-700"
+        >
+          Keyingi
+        </button>
+        <button
+          v-if="showFinishButton"
+          @click="finishTest"
+          class="bg-red-600 text-white py-2 px-6 rounded-full hover:bg-red-700"
+        >
+          ✅ Yakunlash
+        </button>
+      </div>
     </div>
   </section>
 </template>

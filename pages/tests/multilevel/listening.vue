@@ -1,83 +1,70 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch, nextTick } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
+import { useFetch } from "#app";
 
 const router = useRouter();
 const token = process.client ? localStorage.getItem("access_token") : null;
 
-const isTestStarted = ref(sessionStorage.getItem("isTestStarted") === "true");
-const startTime = ref(Number(sessionStorage.getItem("startTime")) || null);
+const isTestStarted = ref(false);
+const isListening = ref(false);
+const isTestCompleted = ref(false);
+const testStartedByUser = ref(false);
+const testLoading = ref(true);
+const errorMessage = ref(null);
+const startTime = ref(null);
 const durationInSeconds = ref(null);
 const remainingTime = ref(0);
 const timerInterval = ref(null);
-const selectedAnswers = ref(
-  JSON.parse(sessionStorage.getItem("selectedAnswers")) || {}
-);
-const currentAudioIndex = ref(
-  Number(localStorage.getItem("currentAudioIndex")) || 0
-);
+const selectedAnswers = ref(JSON.parse(sessionStorage.getItem("selectedAnswers")) || {});
+const currentAudioIndex = ref(Number(localStorage.getItem("currentAudioIndex")) || 0);
+const audioElement = ref(null);
 
-const nextTestOrder = ["reading", "writing", "speaking"];
-
-const testLoading = ref(true);  // State to control the loader visibility
-
-const { data, error } = await useFetch(
-  "https://turantalim2.pythonanywhere.com/multilevel/test/",
-  {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-    query: { language: 2, level: "multilevel", test: "listening", exam_id: 1 },
-  }
-);
+const { data, error } = await useFetch("https://turantalim2.pythonanywhere.com/multilevel/test/", {
+  headers: token ? { Authorization: `Bearer ${token}` } : {},
+  query: { language: 2, level: "multilevel", test: "listening", exam_id: 1 },
+});
 
 if (error.value) {
-  alert("Test yuklanishda xatolik yuz berdi.");
-  router.push("/tests/multilevel/");
+  errorMessage.value = "Test yuklanishda xatolik.";
+  testLoading.value = false;
+} else {
+  testLoading.value = false;
 }
 
 const testInfo = computed(() => {
   const part = data.value?.part;
-  return part
-    ? {
-        title: part.exam.title,
-        duration: data.value.duration,
-        level: part.level,
-        language: part.language.name,
-        partTitle: part.title,
-      }
-    : null;
+  return part ? {
+    title: part.exam.title,
+    duration: data.value.duration,
+    level: part.level,
+    language: part.language.name,
+    partTitle: part.title,
+  } : null;
 });
 
-const tests = computed(
-  () =>
-    data.value?.part.tests.map((test) => ({
-      id: test.id,
-      title: test.title,
-      desc: test.description,
-      sample: test.sample,
-      audio: test.audio,
-      questions: test.questions.map((q) => ({
-        id: q.id,
-        text: q.text,
-        has_options: q.has_options,
-        options: q.options.map((opt) => ({
-          id: opt.id,
-          text: opt.text,
-        })),
-      })),
-    })) || []
+const tests = computed(() => data.value?.part.tests.map(test => ({
+  id: test.id,
+  title: test.title,
+  desc: test.description,
+  sample: test.sample,
+  audio: test.audio,
+  questions: test.questions.map(q => ({
+    id: q.id,
+    text: q.text,
+    has_options: q.has_options,
+    options: q.options.map(opt => ({ id: opt.id, text: opt.text })),
+  })),
+})) || []);
+
+const allAudios = computed(() => tests.value.map(test => test.audio).filter(Boolean));
+
+const unmarkedQuestions = computed(() =>
+  tests.value.flatMap(test => test.questions.filter(q => !selectedAnswers.value[q.id]))
 );
 
-const allAudios = computed(() =>
-  tests.value.map((test) => test.audio).filter(Boolean)
-);
-const audioElement = ref(null);
-
-// 🎧 Audio ijro
 const playAudio = (index) => {
-  if (!allAudios.value[index]) {
-    console.log("🎧 Barcha audiolar tugadi");
-    return;
-  }
+  if (!allAudios.value[index]) return;
 
   if (!audioElement.value) {
     audioElement.value = new Audio();
@@ -89,28 +76,7 @@ const playAudio = (index) => {
   }
 
   audioElement.value.src = allAudios.value[index];
-  audioElement.value.load();
-  audioElement.value.play().catch((err) => {
-    console.warn("Audio play error:", err);
-  });
-};
-
-const resumeAudioFromLast = () => {
-  if (allAudios.value.length > 0) {
-    playAudio(currentAudioIndex.value);
-  }
-};
-
-// ⏱ Timer
-const updateRemainingTime = () => {
-  if (!startTime.value || !durationInSeconds.value) return;
-  const elapsed = Math.floor((Date.now() - startTime.value) / 1000);
-  remainingTime.value = durationInSeconds.value - elapsed;
-
-  if (remainingTime.value <= 0) {
-    clearInterval(timerInterval.value);
-    finishTest();
-  }
+  audioElement.value.play().catch(err => console.warn("Audio play error:", err));
 };
 
 const startTimer = () => {
@@ -118,58 +84,43 @@ const startTimer = () => {
   timerInterval.value = setInterval(updateRemainingTime, 1000);
 };
 
-// 👁 Tab kuzatish
-const originalTitle = document.title;
-document.addEventListener("visibilitychange", () => {
-  if (document.hidden) {
-    if (audioElement.value) audioElement.value.pause();
-    document.title = "▶ Sahifaga qayting";
-  } else {
-    document.title = originalTitle;
-    if (audioElement.value) {
-      audioElement.value
-        .play()
-        .catch((err) => console.warn("Autoplay xatolik:", err));
-    }
+const updateRemainingTime = () => {
+  if (!startTime.value || !durationInSeconds.value) return;
+  const elapsed = Math.floor((Date.now() - startTime.value) / 1000);
+  remainingTime.value = durationInSeconds.value - elapsed;
+  if (remainingTime.value <= 0) {
+    clearInterval(timerInterval.value);
+    finishTest(true);
   }
-});
-
-// ✅ Javob tanlash
-const selectAnswer = (questionId, value) => {
-  selectedAnswers.value[questionId] = value;
-  sessionStorage.setItem(
-    "selectedAnswers",
-    JSON.stringify(selectedAnswers.value)
-  );
 };
 
-// ✅ Test yakunlash
-const finishTest = async () => {
-  const unmarkedQuestions = tests.value.flatMap((test) =>
-    test.questions.filter((q) => !selectedAnswers.value[q.id])
-  );
+const selectAnswer = (questionId, value) => {
+  selectedAnswers.value[questionId] = value;
+  sessionStorage.setItem("selectedAnswers", JSON.stringify(selectedAnswers.value));
+};
 
-  if (unmarkedQuestions.length > 0) {
-    if (
-      !confirm(
-        `Siz ${unmarkedQuestions.length} ta savolni belgilamadingiz. Yakunlaysizmi?`
-      )
-    )
-      return;
-  }
+const startTest = () => {
+  testStartedByUser.value = true;
+  isTestStarted.value = true;
+  isListening.value = true;
+  startTime.value = Date.now();
+  sessionStorage.setItem("startTime", startTime.value);
+  durationInSeconds.value = testInfo.value.duration * 60;
+  startTimer();
+  playAudio(currentAudioIndex.value);
+};
 
-  if (remainingTime.value > 0 && !confirm("Testni yakunlaysizmi?")) return;
+const finishTest = async (isAutoFinish = false) => {
+  if (!isAutoFinish && unmarkedQuestions.value.length > 0 &&
+      !confirm(`Siz ${unmarkedQuestions.value.length} ta savolni belgilamadingiz. Yakunlaysizmi?`)) return;
 
   clearInterval(timerInterval.value);
-
   const test_result_id = data.value?.test_result_id;
   if (!test_result_id) return alert("Test ID topilmadi.");
 
   const answers = Object.entries(selectedAnswers.value).map(([qId, optId]) => {
-    const question = tests.value
-      .flatMap((t) => t.questions)
-      .find((q) => q.id === Number(qId));
-    const option = question?.options.find((o) => o.id === Number(optId));
+    const question = tests.value.flatMap(t => t.questions).find(q => q.id === Number(qId));
+    const option = question?.options.find(o => o.id === Number(optId));
     return {
       question: Number(qId),
       user_option: Number(optId),
@@ -178,182 +129,121 @@ const finishTest = async () => {
   });
 
   try {
-    const res = await fetch(
-      "https://turantalim2.pythonanywhere.com/multilevel/check-test/",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ test_result_id, answers }),
-      }
-    );
+    const res = await fetch("https://turantalim2.pythonanywhere.com/multilevel/check-test/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ test_result_id, answers }),
+    });
 
-    if (!res.ok) return alert("Xatolik: " + (await res.text()));
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.error || "Server xatosi");
+    }
 
     const result = await res.json();
-    const correct = result.answers.filter((a) => a.is_correct).length;
-    const incorrect = result.answers.length - correct;
+    const correct = result.answers.filter(a => a.is_correct).length;
+    const total = result.answers.length;
+    const percentage = Math.round((correct / total) * 100);
+    isListening.value = false;
+    isTestCompleted.value = true;
+    localStorage.setItem("isTestCompleted", true);
 
-    const sectionTitle = "listening";
     const prevResults = JSON.parse(localStorage.getItem("testResults") || "{}");
-
-    prevResults[sectionTitle] = {
-      correct,
-      incorrect,
-      score: result.score,
-      test_completed: result.test_completed,
-    };
+    prevResults.listening = { correct, incorrect: total - correct, score: result.score, percentage };
     localStorage.setItem("testResults", JSON.stringify(prevResults));
 
     sessionStorage.removeItem("startTime");
     sessionStorage.removeItem("selectedAnswers");
 
-    alert(
-      `✅ Test yakunlandi. To‘g‘ri: ${correct}, Xato: ${incorrect}, Ball: ${result.score}`
-    );
+    alert(`✅ Test yakunlandi. To‘g‘ri: ${correct}, Xato: ${total - correct}, Ball: ${result.score}, Foiz: ${percentage}%`);
 
-    const nextSection =
-      nextTestOrder[nextTestOrder.indexOf(sectionTitle) + 1] || "result";
-
-    setTimeout(() => {
-      router.push(`/tests/multilevel/${nextSection}`);
-    }, 500);
+    const nextSection = "reading";
+    router.push(`/tests/multilevel/${nextSection}`);
   } catch (err) {
     console.error(err);
-    alert("Testni yakunlashda xatolik yuz berdi.");
+    alert(`Xatolik: ${err.message}`);
   }
 };
 
-// ✅ onMounted
 onMounted(() => {
-  resumeAudioFromLast()
-  if (!isTestStarted.value) {
-    router.push("/tests/multilevel/");
-    return;
+  sessionStorage.setItem("isTestStarted", "true");
+  if (sessionStorage.getItem("isTestStarted")) isTestStarted.value = true;
+
+  const wasCompleted = localStorage.getItem("isTestCompleted");
+  if (wasCompleted && !isListening.value) {
+    router.push("/tests/multilevel/reading");
   }
 
-  const wait = setInterval(() => {
-    if (testInfo.value) {
-      clearInterval(wait);
-      durationInSeconds.value = testInfo.value.duration * 60;
-
-      if (!startTime.value) {
-        startTime.value = Date.now();
-        sessionStorage.setItem("startTime", startTime.value);
-      }
-
-      startTimer();
-      testLoading.value = false;  // Hide the loader when ready
-    }
-  }, 100);
-});
-
-// 🎧 Testlar kelganda audiolarni boshlash
-watch(tests, async (val) => {
-  if (val.length > 0) {
-    await nextTick(); // DOM tayyor bo‘lganini kutamiz
-    resumeAudioFromLast();
-  }
+  localStorage.removeItem('testResult');
+  localStorage.removeItem('testResults');
+  localStorage.removeItem('isTestCompleted')
+  sessionStorage.removeItem('writingAnswers');
 });
 
 onUnmounted(() => {
   clearInterval(timerInterval.value);
-  if (audioElement.value) audioElement.value.pause();
+  audioElement.value?.pause();
 });
 </script>
 
+
 <template>
   <section class="w-full bg-[#DBEFFF] py-5 flex flex-col gap-5">
-    <SharedTestTime
-      v-if="testInfo"
-      title="Dinleme"
-      :remainingTime="remainingTime"
-      :totalTime="testInfo.duration * 60"
-      class="sticky top-0 z-10"
-    />
-
-    <div
-      class="test-content w-[90%] mx-auto bg-white rounded-[30px] flex flex-col items-center py-5 gap-3"
-    >
-      <h1 class="text-[24px] font-[600]">{{ testInfo?.partTitle }}</h1>
-      <p class="w-[40%] text-center">
-        {{ testInfo?.language }} - {{ testInfo?.level }}. Dinlediğiniz cümleleri
-        tamamlayınız.
-      </p>
-
-      <!-- Loader added here -->
-      <div
-        v-if="testLoading"
-        class="audio-container w-full h-[100px] flex items-center justify-center"
-      >
-        <span class="loader"></span>
+    <!-- Start Page -->
+    <section v-if="!testStartedByUser" class="w-full h-[100vh] flex items-center justify-center">
+      <div v-if="testLoading" class="w-[90%] md:w-[40%] bg-white flex flex-col items-center gap-5 text-[#141522] rounded-[30px] py-5 px-4">
+        <p>Test yuklanmoqda...</p>
       </div>
-
-      <div
-        v-for="(test, testIndex) in tests"
-        :key="test.id"
-        class="w-[70%] flex flex-col gap-5"
-      >
-        <h2 class="text-lg font-semibold">{{ test.title }}</h2>
-        <p class="font-light">{{ test.desc }}</p>
-        <p class="font-light">{{ test.sample }}</p>
-
-        <div
-          v-for="question in test.questions"
-          :key="question.id"
-          class="w-full flex flex-col gap-2"
-        >
-          <span class="font-medium">{{ question.text }}:</span>
-
-          <!-- Agar variantlar mavjud bo‘lsa -->
-          <template v-if="question.has_options">
-            <div
-              v-for="option in question.options"
-              :key="option.id"
-              class="w-full p-3 cursor-pointer bg-[#F5F5F5] rounded-md"
-              @click="selectAnswer(question.id, option.id)"
-              :class="{
-                'bg-[#FFBB33]': selectedAnswers[question.id] === option.id,
-              }"
-            >
-              <p>{{ option.text }}</p>
-            </div>
-          </template>
-
-          <!-- Agar faqat matn inputi bo‘lsa -->
-          <template v-else>
-            <input
-              type="text"
-              class="w-full p-3 border rounded-md"
-              v-model="selectedAnswers[question.id]"
-            />
-          </template>
+      <div v-else-if="errorMessage" class="w-[90%] md:w-[40%] bg-white flex flex-col items-center gap-5 text-[#141522] rounded-[30px] py-5 px-4">
+        <p class="text-red-600">{{ errorMessage }}</p>
+      </div>
+      <div v-else class="w-[95%] md:w-[40%] bg-white flex flex-col items-center gap-5 text-[#141522] rounded-[30px] py-5 px-4">
+        <h1 class="text-[24px] font-[600]">Dinleme</h1>
+        <p>Dinleme bölümüne başlamak üzeresiniz.</p>
+        <div class="w-full flex justify-center">
+          <div class="w-[23%] flex flex-col items-center">
+            <img src="~/assets/svg/headphone.svg" alt="headphone" loading="lazy" />
+            <span class="font-[500]">{{ testInfo?.duration }} dakika</span>
+          </div>
         </div>
+        <ul class="w-full flex flex-col gap-4 list-disc px-5">
+          <li>Bu testteki sorular seviyenize uyum sağlamak için zorlaşabilir veya kolaylaşabilir.</li>
+          <li>Ses kaydını başlatmadan önce soruları okuyun. Her ses kaydını iki kez dinleyebilirsiniz.</li>
+          <li>Bir egzersizi gönderdikten sonra geri dönemezsiniz.</li>
+        </ul>
+        <button @click="startTest" class="px-10 py-2 bg-[#0C8CE9] rounded-[15px] text-white">Başla</button>
       </div>
+    </section>
 
-      <div class="mt-5 w-[60%] flex justify-between items-center">
-        <button @click="finishTest" class="w-full bg-[#4CAF50] py-2 text-white rounded-md">
-          Testni yakunlash
-        </button>
+    <!-- Test Content -->
+    <template v-else>
+      <SharedTestTime v-if="testInfo" title="Dinleme" :remainingTime="remainingTime" :totalTime="testInfo.duration * 60" class="sticky top-0 z-10" />
+      <div class="test-content w-[90%] mx-auto bg-white rounded-[30px] flex flex-col items-center py-5 gap-3">
+        <h1 class="text-[20px] font-[600] text-center">{{ testInfo?.partTitle }}</h1>
+        <p class="w-[90%] text-center">{{ testInfo?.language }} - {{ testInfo?.level }}. Dinlediğiniz cümleleri tamamlayınız.</p>
+        <div v-for="test in tests" :key="test.id" class="w-[90%] flex flex-col gap-5">
+          <h2 class="text-lg font-semibold">{{ test.title }}</h2>
+          <p class="font-light">{{ test.desc }}</p>
+          <p class="font-light">{{ test.sample }}</p>
+          <div v-for="question in test.questions" :key="question.id" class="w-full flex flex-col gap-2">
+            <span class="font-medium" :class="{ 'text-red-600': !selectedAnswers[question.id] }">{{ question.text }}:</span>
+            <template v-if="question.has_options">
+              <div v-for="option in question.options" :key="option.id" class="w-full p-3 cursor-pointer bg-[#F5F5F5] rounded-md"
+                @click="selectAnswer(question.id, option.id)" :class="{ 'bg-[#FFBB33]': selectedAnswers[question.id] === option.id }">
+                <p>{{ option.text }}</p>
+              </div>
+            </template>
+            <template v-else>
+              <input type="text" class="w-full p-3 border rounded-md" :class="{ 'border-red-600': !selectedAnswers[question.id] }" v-model="selectedAnswers[question.id]" />
+            </template>
+          </div>
+        </div>
+        <button @click="finishTest" class="w-[60%] bg-[#4CAF50] py-2 text-white rounded-md mt-5">Testni yakunlash</button>
       </div>
-    </div>
+    </template>
   </section>
 </template>
-
-<style scoped>
-.loader {
-  border: 8px solid #f3f3f3;
-  border-top: 8px solid #3498db;
-  border-radius: 50%;
-  width: 50px;
-  height: 50px;
-  animation: spin 2s linear infinite;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-</style>
+```

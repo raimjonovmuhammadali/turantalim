@@ -6,7 +6,7 @@ definePageMeta({
 
 <template>
   <section
-    class="w-full h-auto md:h-[100vh] flex flex-col items-center bg-[#DBEFFF] justify-evenly"
+    class="w-full h-auto md:h-[100vh] flex flex-col items-center bg-[#DBEFFF] justify-evenly gap-5"
   >
     <nav
       class="w-[90%] mx-auto p-3 flex items-center justify-center bg-white rounded-2xl"
@@ -28,25 +28,25 @@ definePageMeta({
       </div>
 
       <div class="w-full test-types flex flex-wrap items-center justify-between">
-        <div class="w-[23%] type flex flex-col items-center">
+        <div class="w-[10%] md:w-[23%] type flex flex-col items-center justify-center text-center">
           <img src="~/assets/svg/bold.svg" alt="bold.svg" loading="lazy" />
           <span class="text-[12px]">Okuma</span>
-          <span class="font-[500]">20 dakika</span>
+          <span class="text-[12px] font-[500]">20 dakika</span>
         </div>
-        <div class="w-[23%] type flex flex-col items-center">
+        <div class="w-[10%] md:w-[23%] type flex flex-col items-center justify-center text-center">
           <img src="~/assets/svg/headphone.svg" alt="headphone.svg" loading="lazy" />
           <span class="text-[12px]">Dinlema</span>
-          <span class="font-[500]">20 dakika</span>
+          <span class="text-[12px] font-[500]">20 dakika</span>
         </div>
-        <div class="w-[23%] type flex flex-col items-center">
+        <div class="w-[10%] md:w-[23%] type flex flex-col items-center justify-center text-center">
           <img src="~/assets/svg/note.svg" alt="note.svg" loading="lazy" />
           <span class="text-[12px]">Yazma</span>
-          <span class="font-[500]">20 dakika</span>
+          <span class="text-[12px] font-[500]">20 dakika</span>
         </div>
-        <div class="w-[23%] type flex flex-col items-center">
+        <div class="w-[10%] md:w-[23%] type flex flex-col items-center justify-center text-center">
           <img src="~/assets/svg/sound.svg" alt="sound.svg" loading="lazy" />
           <span class="text-[12px]">Konusma</span>
-          <span class="font-[500]">20 dakika</span>
+          <span class="text-[12px] font-[500]">20 dakika</span>
         </div>
       </div>
 
@@ -69,7 +69,8 @@ definePageMeta({
         </ul>
       </div>
 
-      <nuxt-link to="/tests/multilevel/" class="px-10 py-2 cursor-pointer bg-[#0C8CE9] rounded-[15px] text-white">İleri</nuxt-link>
+      <nuxt-link to="/tests/multilevel/listening" class="px-10 py-2 cursor-pointer bg-[#0C8CE9] rounded-[15px] text-white">İleri</nuxt-link>
+      <nuxt-link to="/">Ana sayfa~</nuxt-link>
     </div>
   </section>
 </template>

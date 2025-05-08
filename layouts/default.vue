@@ -17,7 +17,6 @@ onMounted(() => {
         src="~/assets/images/loader.svg"
         alt="Loading..."
         class="absolute w-[250px] h-[250px]"
-        loading="lazy"
       />
 
       <!-- Aylanadigan chegara -->
@@ -25,7 +24,7 @@ onMounted(() => {
         class="w-[250px] h-[250px] border-4 border-gray-300 border-t-blue-500 rounded-full animate-spin"
       ></div>
     </div>
-    <h1 class="text-[60px] font-[600] text-white">Sevdiğim Yerdeyim</h1>
+    <h1 class="text-[30px] md:text-[60px] font-[600] text-white">Sevdiğim Yerdeyim</h1>
   </div>
 
   <div v-else>

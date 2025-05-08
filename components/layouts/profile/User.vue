@@ -1,6 +1,15 @@
 <script setup lang="ts">
 
 const profileStore = useProfileStore();
+import { onMounted } from 'vue'
+import { useBalanceStore } from '@/stores/balance'
+
+const balanceStore = useBalanceStore()
+
+onMounted(() => {
+  balanceStore.getBalance()
+})
+
 
 </script>
 <template>
@@ -13,11 +22,11 @@ const profileStore = useProfileStore();
             </div>
         </nuxt-link>
         <hr class="text-[#F6F6F6] h-2">
-        <nuxt-link to="./balance" class="balance flex items-center gap-5">
+        <nuxt-link to="/profile/balance" class="balance flex items-center gap-5">
             <Icon name="uil:wallet" class="text-[#0C8CE9] text-[50px]"/>
             <div class="">
                 <span class="text-[#9D9DA9] font-[500]">Hesabım</span>
-                <h1 class="font-[600] text-[24px]">200 000 so‘m</h1>
+                <h1 class="font-[600] text-[24px]">{{balanceStore.balance}} so‘m</h1>
             </div>
         </nuxt-link>
         <hr class="text-[#F6F6F6] h-2">
