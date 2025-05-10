@@ -23,7 +23,7 @@ const handleTopup = async () => {
 
   try {
     const { data, error } = await useFetch(
-      "http://turantalim2.pythonanywhere.com/payment/balance/topup/",
+      `${API_BASE_URL}/payment/balance/topup/`,
       {
         method: "POST",
         headers: {

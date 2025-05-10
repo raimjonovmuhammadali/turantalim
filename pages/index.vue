@@ -4,6 +4,8 @@ import { useBox } from "~/types";
 
 const { boxes } = useBox();
 const is_auth = localStorage.getItem("access_token");
+
+
 </script>
 <template>
   <header
@@ -20,14 +22,12 @@ const is_auth = localStorage.getItem("access_token");
       />
       <ul class="hidden md:flex items-center gap-5 font-[500] text-[20px]">
         <li>
-          <nuxt-link to="/">Home</nuxt-link>
+          <nuxt-link to="/">Bosh sahifa</nuxt-link>
         </li>
         <li>
-          <nuxt-link to="/">Multilevel</nuxt-link>
+          <nuxt-link to="#about">Biz haqimizda</nuxt-link>
         </li>
-        <li>
-          <nuxt-link to="/">About</nuxt-link>
-        </li>
+        <li><a href="#tests">Testlar</a></li>
       </ul>
       <nuxt-link
         to="/auth"
@@ -72,18 +72,20 @@ const is_auth = localStorage.getItem("access_token");
       </div>
     </div>
   </header>
-  <main class="w-full">
+  <main class="w-full" id="tests">
     <div
       class="test-section w-[90%] mx-auto h-auto md:h-[600px] flex flex-col gap-10 justify-center"
     >
-      <h1 class="text-[30px] md:text-[50px] font-[600] ">Umumiy test sinovlari</h1>
+      <h1 class="text-[30px] md:text-[50px] font-[600]">
+        Umumiy test sinovlari
+      </h1>
       <div class="tests-boxes flex gap-5 flex-wrap">
         <TestBox v-for="box in boxes" :key="box.id" :box="box" />
       </div>
     </div>
 
     <div
-      class="about w-full h-auto md:h-[600px] bg-[#DBEFFF] flex flex-col-reverse md:flex-row items-center py-5 md:py-0"
+      class="about w-full h-auto md:h-[600px] bg-[#DBEFFF] flex flex-col-reverse md:flex-row items-center py-5 md:py-0" id="about"
     >
       <div
         class="about-auto w-[90%] mx-auto flex flex-col md:flex-row items-center justify-center md:justify-between"
@@ -136,8 +138,12 @@ const is_auth = localStorage.getItem("access_token");
   </main>
 
   <footer class="w-full h-auto md:h-[300px] bg-[#01042A] py-5 md:py-0">
-    <div class="w-[90%] h-full mx-auto flex flex-col md:flex-row items-center justify-between text-center md:text-start">
-      <div class="w-full copyright text-white text-[18px] flex flex-col gap-4 items-center md:items-start">
+    <div
+      class="w-[90%] h-full mx-auto flex flex-col md:flex-row items-center justify-between text-center md:text-start"
+    >
+      <div
+        class="w-full copyright text-white text-[18px] flex flex-col gap-4 items-center md:items-start"
+      >
         <img
           src="~/assets/images/logo.png"
           alt="logo"
@@ -179,7 +185,9 @@ const is_auth = localStorage.getItem("access_token");
         </ul>
       </div>
 
-      <div class="w-full adress text-[18px] text-white flex flex-col items-center md:items-end gap-4 text-center md:text-start">
+      <div
+        class="w-full adress text-[18px] text-white flex flex-col items-center md:items-end gap-4 text-center md:text-start"
+      >
         <span class="text-[14px]">Manzil</span>
         <p>
           Farg’ona shahar, A. <br />
@@ -194,3 +202,8 @@ const is_auth = localStorage.getItem("access_token");
     </div>
   </footer>
 </template>
+<style scoped>
+*{
+  scroll-behavior: smooth;
+}
+</style>

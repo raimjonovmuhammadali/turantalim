@@ -19,7 +19,7 @@ const timerInterval = ref(null);
 const durationInSeconds = ref(0);
 
 const { data, error } = await useFetch(
-  "https://turantalim2.pythonanywhere.com/multilevel/test/",
+  `${API_BASE_URL}/multilevel/test/`,
   {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
     query: { language: 2, level: "multilevel", test: "writing", exam_id: 1 },
@@ -27,7 +27,7 @@ const { data, error } = await useFetch(
 );
 
 if (error.value || !data.value?.part?.tests?.length) {
-  alert("Testlar yuklanmadi.");
+  alert("Testler yüklenmedi.");
   router.push("/tests/multilevel/");
 }
 
@@ -80,7 +80,7 @@ onMounted(() => {
   const isDone = saved?.[data.value?.test_result_id]?.is_writing;
 
   if (isDone) {
-    alert("Writing testi allaqachon yakunlangan.");
+    alert("Yazma sınavı tamamlandı.");
     router.push("/tests/multilevel/speaking");
   }
 });
@@ -94,12 +94,12 @@ const handleFileChange = (event) => {
   if (!file || !currentQuestion.value) return;
 
   if (file.size > 5 * 1024 * 1024) {
-    alert("Fayl hajmi 5MB dan oshmasligi kerak.");
+    alert("Dosya boyutu 5MB'ı geçmemelidir.");
     return;
   }
 
   if (!["image/jpeg", "image/png"].includes(file.type)) {
-    alert("Faqat JPG va PNG fayllar qabul qilinadi.");
+    alert("Sadece JPG ve PNG dosyaları kabul edilmektedir.");
     return;
   }
 
@@ -120,7 +120,7 @@ const handleFileChange = (event) => {
 
 const nextQuestion = () => {
   if (!getUploadedFile(currentQuestion.value.id)) {
-    alert("❌ Iltimos, fayl yuklang.");
+    alert("❌ Lütfen bir resim yükleyin.");
     return;
   }
 
@@ -142,11 +142,11 @@ const nextQuestion = () => {
 };
 
 const finishTest = async (auto = false) => {
-  if (!auto && !confirm("Testni yakunlaysizmi?")) return;
+  if (!auto && !confirm("Testi tamamlayacak mısın?")) return;
 
   const test_result_id = data.value?.test_result_id;
   if (!test_result_id) {
-    alert("Test natija ID topilmadi.");
+    alert("Test sonucu kimliği bulunamadı.");
     return;
   }
 
@@ -165,7 +165,7 @@ const finishTest = async (auto = false) => {
     });
 
     const res = await fetch(
-      "https://turantalim2.pythonanywhere.com/multilevel/testcheck/writing/",
+      `${API_BASE_URL}/multilevel/testcheck/writing/`,
       {
         method: "POST",
         headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -175,7 +175,7 @@ const finishTest = async (auto = false) => {
 
     if (!res.ok) {
       const error = await res.json();
-      throw new Error(error.detail || "Xatolik yuz berdi.");
+      throw new Error(error.detail || "Bir hata oluştu.");
     }
 
     const result = await res.json();
@@ -191,10 +191,10 @@ const finishTest = async (auto = false) => {
 
     localStorage.setItem("testResults", JSON.stringify(saved));
 
-    alert("✅ Test yakunlandi.");
+    alert("✅ Test tamamlandı.");
     router.push("/tests/multilevel/speaking");
   } catch (e) {
-    alert(e.message || "Yakunlashda xatolik.");
+    alert(e.message || "Kapatma sırasında hata oluştu.");
   } finally {
     isLoading.value = false;
   }
@@ -211,11 +211,9 @@ const finishTest = async (auto = false) => {
       class="sticky top-0 z-10"
     />
 
-    <div
-      v-if="isLoading"
-      class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-10"
-    >
-      <div class="bg-white p-4 rounded-lg text-center">Yuklanmoqda...</div>
+
+    <div v-if="isLoading" class="fixed inset-0 bg-gray-500 bg-opacity-50 flex justify-center items-center z-10">
+      <div class="text-white text-xl">Gönderiliyor...</div>
     </div>
 
     <div
@@ -224,7 +222,7 @@ const finishTest = async (auto = false) => {
     >
       <h2 class="text-xl font-bold mb-2">{{ currentQuestion.text }}</h2>
       <p class="text-sm text-gray-500 mb-4">
-        Test {{ currentTestIndex + 1 }} | Savol {{ currentQuestionIndex + 1 }}
+        Test {{ currentTestIndex + 1 }} | Sorusu {{ currentQuestionIndex + 1 }}
       </p>
 
       <input
@@ -236,7 +234,7 @@ const finishTest = async (auto = false) => {
       />
 
       <div v-if="uploadedFile" class="mb-4">
-        <p class="text-sm font-medium mb-1">📷 Yuklangan rasm:</p>
+        <p class="text-sm font-medium mb-1">📷 Yüklenen resim:</p>
         <img :src="uploadedFile" class="max-h-60 rounded border" />
       </div>
 
@@ -246,14 +244,14 @@ const finishTest = async (auto = false) => {
           @click="nextQuestion"
           class="bg-blue-600 text-white py-2 px-6 rounded-full hover:bg-blue-700"
         >
-          Keyingi
+          Sonraki
         </button>
         <button
           v-if="showFinishButton"
           @click="finishTest"
           class="bg-red-600 text-white py-2 px-6 rounded-full hover:bg-red-700"
         >
-          ✅ Yakunlash
+          ✅ Çözüm
         </button>
       </div>
     </div>

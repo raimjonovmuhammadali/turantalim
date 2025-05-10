@@ -15,7 +15,7 @@ export const useBalanceStore = defineStore('balance', () => {
     try {
       const token = localStorage.getItem('access_token')
       const response = await axios.get(
-        'https://turantalim2.pythonanywhere.com/payment/balance/',
+        `${API_BASE_URL}/payment/balance/`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

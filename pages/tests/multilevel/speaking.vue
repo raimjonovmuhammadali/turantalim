@@ -23,13 +23,13 @@ const remainingTime = ref(0);
 const loading = ref(false);
 
 // Fetch test data
-const { data, error } = await useFetch("https://turantalim2.pythonanywhere.com/multilevel/test/", {
+const { data, error } = await useFetch(`${API_BASE_URL}/multilevel/test/`, {
   headers: token ? { Authorization: `Bearer ${token}` } : {},
   query: { language: 2, level: "multilevel", test: "speaking", exam_id: 1 },
 });
 
 if (error.value || !data.value?.part?.tests?.length) {
-  alert("❌ Test yuklanmadi.");
+  alert("❌ Testler yüklenmedi..");
   router.push("/tests/multilevel/reading");
 }
 
@@ -91,7 +91,7 @@ const startRecording = () => {
     recording.value = true;
   }).catch(error => {
     console.error("Microphone access denied", error);
-    alert("❌ Iltimos, mikrofonni yoqing.");
+    alert("❌ Lütfen mikrofonu açın.");
   });
 };
 
@@ -105,7 +105,7 @@ const stopRecording = () => {
 // Save audio and score locally
 const saveRecordingLocally = () => {
   if (!audioBlob.value || audioBlob.value.size === 0) {
-    alert("❌ Audio bo'sh bo'la olmaydi.");
+    alert("❌ Ses boş olamaz.");
     return false;
   }
 
@@ -115,7 +115,7 @@ const saveRecordingLocally = () => {
     score: 0, // Placeholder for score, can be set once scoring is available
   });
 
-  console.log("🎙 Saqlangan audio:", speakingAnswers.value);
+  console.log("🎙 Kaydedilen ses:", speakingAnswers.value);
 
   return true;
 };
@@ -135,7 +135,7 @@ const submitAllRecordings = async () => {
   loading.value = true;
 
   try {
-    const res = await fetch("https://turantalim2.pythonanywhere.com/multilevel/testcheck/speaking/", {
+    const res = await fetch(`${API_BASE_URL}/multilevel/testcheck/speaking/`, {
       method: "POST",
       headers: {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -145,7 +145,7 @@ const submitAllRecordings = async () => {
 
     if (!res.ok) {
       const errText = await res.text();
-      alert(`❌ Yuborishda xatolik: ${errText}`);
+      alert(`❌ Gönderirken hata oluştu: ${errText}`);
       console.error("❌ Server xatolik:", errText);
       return;
     }
@@ -167,11 +167,12 @@ const submitAllRecordings = async () => {
     sessionStorage.removeItem("startTime");
     sessionStorage.removeItem('currentQuestionIndex');
     sessionStorage.removeItem('isReading');
+    localStorage.removeItem('isTestCompleted')
 
     // Redirect to results page after finishing the test
     router.push("/tests/multilevel/result");
   } catch (error) {
-    alert("❌ Yuborishda xatolik: " + error.message);
+    alert("❌ YGönderirken hata oluştu: " + error.message);
     console.error("❌ Serverga yuborishda xatolik:", error);
   } finally {
     // Set loading to false after submission attempt
@@ -197,7 +198,7 @@ const nextQuestion = async () => {
 };
 
 const finishTest = async () => {
-  alert("✅ Test tugadi!");
+  alert("✅ Sınav bitti!");
 
   await submitAllRecordings();
 
@@ -250,7 +251,7 @@ const currentQuestion = computed(() => questions.value[currentQuestionIndex.valu
 
     <!-- Loader that appears when loading is true -->
     <div v-if="loading" class="fixed inset-0 bg-gray-500 bg-opacity-50 flex justify-center items-center z-10">
-      <div class="text-white text-xl">Yuborilyapti...</div>
+      <div class="text-white text-xl">Gönderiliyor...</div>
     </div>
   </section>
 </template>

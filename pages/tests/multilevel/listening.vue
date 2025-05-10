@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import { useFetch } from "#app";
+import { API_BASE_URL } from "@/utils/api";
 
 const router = useRouter();
 const token = process.client ? localStorage.getItem("access_token") : null;
@@ -20,13 +21,13 @@ const selectedAnswers = ref(JSON.parse(sessionStorage.getItem("selectedAnswers")
 const currentAudioIndex = ref(Number(localStorage.getItem("currentAudioIndex")) || 0);
 const audioElement = ref(null);
 
-const { data, error } = await useFetch("https://turantalim2.pythonanywhere.com/multilevel/test/", {
+const { data, error } = await useFetch(`${API_BASE_URL}/multilevel/test/`, {
   headers: token ? { Authorization: `Bearer ${token}` } : {},
   query: { language: 2, level: "multilevel", test: "listening", exam_id: 1 },
 });
 
 if (error.value) {
-  errorMessage.value = "Test yuklanishda xatolik.";
+  errorMessage.value = "Test yüklenirken hata oluştu.";
   testLoading.value = false;
 } else {
   testLoading.value = false;
@@ -43,19 +44,32 @@ const testInfo = computed(() => {
   } : null;
 });
 
-const tests = computed(() => data.value?.part.tests.map(test => ({
-  id: test.id,
-  title: test.title,
-  desc: test.description,
-  sample: test.sample,
-  audio: test.audio,
-  questions: test.questions.map(q => ({
-    id: q.id,
-    text: q.text,
-    has_options: q.has_options,
-    options: q.options.map(opt => ({ id: opt.id, text: opt.text })),
-  })),
-})) || []);
+const tests = computed(() =>
+  data.value?.part.tests.map(test => {
+    // Tashqi options (select dropdown uchun)
+    const allOptions = test.options
+      ? Object.entries(test.options).map(([key, value], index) => ({
+          id: index + 1,
+          key,
+          text: value,
+        }))
+      : [];
+
+    return {
+      id: test.id,
+      title: test.title,
+      desc: test.description,
+      sample: test.sample,
+      audio: test.audio,
+      questions: test.questions.map(q => ({
+        id: q.id,
+        text: q.text,
+        isRadio: q.options && q.options.length > 0, // Radio button uchun
+        options: q.options && q.options.length > 0 ? q.options : allOptions, // Options tanlash
+      })),
+    };
+  }) || []
+);
 
 const allAudios = computed(() => tests.value.map(test => test.audio).filter(Boolean));
 
@@ -94,8 +108,8 @@ const updateRemainingTime = () => {
   }
 };
 
-const selectAnswer = (questionId, value) => {
-  selectedAnswers.value[questionId] = value;
+const selectAnswer = (questionId, optionId) => {
+  selectedAnswers.value[questionId] = optionId;
   sessionStorage.setItem("selectedAnswers", JSON.stringify(selectedAnswers.value));
 };
 
@@ -112,11 +126,11 @@ const startTest = () => {
 
 const finishTest = async (isAutoFinish = false) => {
   if (!isAutoFinish && unmarkedQuestions.value.length > 0 &&
-      !confirm(`Siz ${unmarkedQuestions.value.length} ta savolni belgilamadingiz. Yakunlaysizmi?`)) return;
+      !confirm(`Siz ${unmarkedQuestions.value.length} soruyu işaretlemedin. Bitirecek misin?`)) return;
 
   clearInterval(timerInterval.value);
   const test_result_id = data.value?.test_result_id;
-  if (!test_result_id) return alert("Test ID topilmadi.");
+  if (!test_result_id) return alert("Test Kimliği bulunamadı.");
 
   const answers = Object.entries(selectedAnswers.value).map(([qId, optId]) => {
     const question = tests.value.flatMap(t => t.questions).find(q => q.id === Number(qId));
@@ -128,8 +142,16 @@ const finishTest = async (isAutoFinish = false) => {
     };
   });
 
+  const payload = {
+    test_result_id: Number(test_result_id),
+    answers,
+  };
+
+  // Konsolga payload ni chiqaramiz
+  console.log("API ga yuboriladigan ma'lumotlar:", JSON.stringify(payload, null, 2));
+
   try {
-    const res = await fetch("https://turantalim2.pythonanywhere.com/multilevel/check-test/", {
+    const res = await fetch(`${API_BASE_URL}/multilevel/check-test/`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -140,7 +162,7 @@ const finishTest = async (isAutoFinish = false) => {
 
     if (!res.ok) {
       const errorData = await res.json();
-      throw new Error(errorData.error || "Server xatosi");
+      throw new Error(errorData.error || "Sunucu hatası");
     }
 
     const result = await res.json();
@@ -158,7 +180,7 @@ const finishTest = async (isAutoFinish = false) => {
     sessionStorage.removeItem("startTime");
     sessionStorage.removeItem("selectedAnswers");
 
-    alert(`✅ Test yakunlandi. To‘g‘ri: ${correct}, Xato: ${total - correct}, Ball: ${result.score}, Foiz: ${percentage}%`);
+    alert(`✅ Test tamamlandı.`);
 
     const nextSection = "reading";
     router.push(`/tests/multilevel/${nextSection}`);
@@ -179,7 +201,7 @@ onMounted(() => {
 
   localStorage.removeItem('testResult');
   localStorage.removeItem('testResults');
-  localStorage.removeItem('isTestCompleted')
+  localStorage.removeItem('isTestCompleted');
   sessionStorage.removeItem('writingAnswers');
 });
 
@@ -189,13 +211,12 @@ onUnmounted(() => {
 });
 </script>
 
-
 <template>
   <section class="w-full bg-[#DBEFFF] py-5 flex flex-col gap-5">
     <!-- Start Page -->
     <section v-if="!testStartedByUser" class="w-full h-[100vh] flex items-center justify-center">
       <div v-if="testLoading" class="w-[90%] md:w-[40%] bg-white flex flex-col items-center gap-5 text-[#141522] rounded-[30px] py-5 px-4">
-        <p>Test yuklanmoqda...</p>
+        <p>Yükleme testi...</p>
       </div>
       <div v-else-if="errorMessage" class="w-[90%] md:w-[40%] bg-white flex flex-col items-center gap-5 text-[#141522] rounded-[30px] py-5 px-4">
         <p class="text-red-600">{{ errorMessage }}</p>
@@ -230,20 +251,38 @@ onUnmounted(() => {
           <p class="font-light">{{ test.sample }}</p>
           <div v-for="question in test.questions" :key="question.id" class="w-full flex flex-col gap-2">
             <span class="font-medium" :class="{ 'text-red-600': !selectedAnswers[question.id] }">{{ question.text }}:</span>
-            <template v-if="question.has_options">
-              <div v-for="option in question.options" :key="option.id" class="w-full p-3 cursor-pointer bg-[#F5F5F5] rounded-md"
-                @click="selectAnswer(question.id, option.id)" :class="{ 'bg-[#FFBB33]': selectedAnswers[question.id] === option.id }">
-                <p>{{ option.text }}</p>
-              </div>
-            </template>
-            <template v-else>
-              <input type="text" class="w-full p-3 border rounded-md" :class="{ 'border-red-600': !selectedAnswers[question.id] }" v-model="selectedAnswers[question.id]" />
-            </template>
+            <!-- Radio buttonlar (question ichida options bo‘lsa) -->
+            <div v-if="question.isRadio" class="flex flex-col gap-2">
+              <label v-for="option in question.options" :key="option.id" class="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  :name="'question-' + question.id"
+                  :value="option.id"
+                  :checked="selectedAnswers[question.id] === option.id"
+                  @change="selectAnswer(question.id, option.id)"
+                  class="form-radio"
+                />
+                <span>{{ option.text }}</span>
+              </label>
+            </div>
+            <!-- Select dropdown (question ichida options bo‘lmasa, lekin tashqarida options bo‘lsa) -->
+            <div v-else-if="question.options.length" class="mt-2">
+              <select
+                class="w-full p-3 border rounded-md"
+                :class="{ 'border-red-600': !selectedAnswers[question.id] }"
+                :value="selectedAnswers[question.id] || ''"
+                @change="(e) => selectAnswer(question.id, Number(e.target.value))"
+              >
+                <option disabled value="">Cevaplardan birini seçin.</option>
+                <option v-for="option in question.options" :key="option.id" :value="option.id">
+                  {{ option.text }}
+                </option>
+              </select>
+            </div>
           </div>
         </div>
-        <button @click="finishTest" class="w-[60%] bg-[#4CAF50] py-2 text-white rounded-md mt-5">Testni yakunlash</button>
+        <button @click="finishTest" class="w-[60%] bg-[#4CAF50] py-2 text-white rounded-md mt-5">Testi tamamla</button>
       </div>
     </template>
   </section>
 </template>
-```

@@ -14,7 +14,7 @@ const testInfo = ref(null);
 
 // Data fetching
 const { data, pending, error } = await useFetch(
-  "https://turantalim2.pythonanywhere.com/multilevel/test/",
+  `${API_BASE_URL}/multilevel/test/`,
   {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
     query: {
