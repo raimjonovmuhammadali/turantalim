@@ -1,4 +1,4 @@
-export const API_BASE_URL = "http://api.turantalim.uz";
+export const API_BASE_URL = "https://api.turantalim.uz";
 
 export const fetchData = async (endpoint: string, options: RequestInit = {}) => {
   const token = localStorage.getItem("access_token");
