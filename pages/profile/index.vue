@@ -19,6 +19,7 @@ const userData = ref({
 
 onMounted(async () => {
   const cachedProfile = localStorage.getItem("profileData");
+  
   if (cachedProfile) {
     profileStore.profileData = JSON.parse(cachedProfile);
   } else {
@@ -58,19 +59,21 @@ const handleSubmit = async () => {
 watch(
   () => profileStore.profileData,
   (newProfile) => {
+    console.log("Yangi profil keldi:", newProfile);
     if (newProfile) {
       userData.value = {
         name: newProfile.first_name || "",
         surname: newProfile.last_name || "",
         birthdate: newProfile.birthdate || "",
         gender: newProfile.gender || "",
-        phone: newProfile.phone || "",
+        phone: newProfile.phone || "", // Bu yerda borligini tekshiring
         email: newProfile.email || "",
       };
     }
   },
   { immediate: true }
 );
+
 </script>
 
 <template>
@@ -112,7 +115,7 @@ watch(
             { id: 'surname', label: 'Soyadı', type: 'text' },
             { id: 'birthdate', label: 'Doğum tarihiniz', type: 'date' },
             { id: 'gender', label: 'Cinsiyet', type: 'select', options: [{ value: 'male', label: 'Erkek' }, { value: 'female', label: 'Kadın' }] },
-            { id: 'phone', label: 'Telefon numarası', type: 'number' },
+            { id: 'phone', label: 'Telefon numarası', type: 'text' },
             { id: 'email', label: 'E-posta', type: 'email' },
           ]"
           v-model:formData="userData"

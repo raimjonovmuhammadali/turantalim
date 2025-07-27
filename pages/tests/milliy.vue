@@ -6,7 +6,7 @@ definePageMeta({
 
 <template>
   <section
-    class="w-full h-auto md:h-[100vh] flex flex-col items-center bg-[#DBEFFF] justify-evenly gap-5"
+    class="w-full h-auto flex flex-col items-center bg-[#DBEFFF] justify-evenly gap-5"
   >
     <nav
       class="w-[90%] mx-auto p-3 flex items-center justify-center bg-white rounded-2xl"

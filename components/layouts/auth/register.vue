@@ -43,6 +43,7 @@ const registerUser = async () => {
       last_name: form.value.lastName,
       phone: form.value.phone || null,
       email: form.value.email || null,
+      gender: 'female ',
       password: form.value.password,
       confirm_password: form.value.confirmPassword,
     });
