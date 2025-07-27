@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { defineProps, defineEmits, ref, watch } from "vue";
 
+// Props va Emit
 const props = defineProps<{ 
   title: string; 
   formData: Record<string, any>; 
@@ -14,9 +15,10 @@ const props = defineProps<{
 
 const emit = defineEmits(["update:formData"]);
 
+// Local nusxa
 const localData = ref({ ...props.formData });
 
-// ✅ FormData o‘zgarganda localData-ni update qilish
+// formData o‘zgarganda localData-ni yangilash
 watch(
   () => props.formData,
   (newVal) => {
@@ -25,11 +27,16 @@ watch(
   { deep: true }
 );
 
-// ✅ localData o‘zgarganda emit qilish
+// 🔧 Debounce bilan emit qilish (siklga tushishni oldini olish)
+let timeout: ReturnType<typeof setTimeout> | null = null;
+
 watch(
   localData,
   (newVal) => {
-    emit("update:formData", newVal);
+    if (timeout) clearTimeout(timeout);
+    timeout = setTimeout(() => {
+      emit("update:formData", newVal);
+    }, 300);
   },
   { deep: true }
 );
@@ -63,6 +70,7 @@ watch(
           v-model="localData[field.id]"
           class="p-2 w-full border border-gray-300 bg-gray-100 rounded-md outline-none"
         >
+          <option value="">Tanlang</option>
           <option
             v-for="option in field.options"
             :key="option.value"
@@ -73,5 +81,8 @@ watch(
         </select>
       </div>
     </div>
+
+    <!-- 🔍 Debug maqsadida -->
+    <!-- <pre>{{ localData }}</pre> -->
   </div>
 </template>
