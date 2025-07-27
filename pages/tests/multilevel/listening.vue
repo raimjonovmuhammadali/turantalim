@@ -27,7 +27,7 @@ const { data, error } = await useFetch(`${API_BASE_URL}/multilevel/test/`, {
 });
 
 if (error.value) {
-  errorMessage.value = "Test yüklenirken hata oluştu.";
+  errorMessage.value = "Test yuklanishda xatolik yuz berdi.";
   testLoading.value = false;
 } else {
   testLoading.value = false;
@@ -46,7 +46,6 @@ const testInfo = computed(() => {
 
 const tests = computed(() =>
   data.value?.part.tests.map(test => {
-    // Tashqi options (select dropdown uchun)
     const allOptions = test.options
       ? Object.entries(test.options).map(([key, value], index) => ({
           id: index + 1,
@@ -64,8 +63,8 @@ const tests = computed(() =>
       questions: test.questions.map(q => ({
         id: q.id,
         text: q.text,
-        isRadio: q.options && q.options.length > 0, // Radio button uchun
-        options: q.options && q.options.length > 0 ? q.options : allOptions, // Options tanlash
+        isRadio: q.options && q.options.length > 0,
+        options: q.options && q.options.length > 0 ? q.options : allOptions,
       })),
     };
   }) || []
@@ -87,10 +86,20 @@ const playAudio = (index) => {
       localStorage.setItem("currentAudioIndex", currentAudioIndex.value);
       playAudio(currentAudioIndex.value);
     });
+    audioElement.value.addEventListener("timeupdate", () => {
+      localStorage.setItem("audioCurrentTime", audioElement.value.currentTime);
+    });
   }
 
   audioElement.value.src = allAudios.value[index];
-  audioElement.value.play().catch(err => console.warn("Audio play error:", err));
+  const savedTime = Number(localStorage.getItem("audioCurrentTime")) || 0;
+  audioElement.value.currentTime = savedTime;
+
+  setTimeout(() => {
+    audioElement.value.play().catch(err => {
+      console.warn("Audio autoplay blocked:", err.message);
+    });
+  }, 500);
 };
 
 const startTimer = () => {
@@ -122,15 +131,16 @@ const startTest = () => {
   durationInSeconds.value = testInfo.value.duration * 60;
   startTimer();
   playAudio(currentAudioIndex.value);
+  sessionStorage.setItem("isTestStarted", "true");
 };
 
 const finishTest = async (isAutoFinish = false) => {
   if (!isAutoFinish && unmarkedQuestions.value.length > 0 &&
-      !confirm(`Siz ${unmarkedQuestions.value.length} soruyu işaretlemedin. Bitirecek misin?`)) return;
+      !confirm(`Siz ${unmarkedQuestions.value.length} ta savolga javob bermadingiz. Baribir yakunlaysizmi?`)) return;
 
   clearInterval(timerInterval.value);
   const test_result_id = data.value?.test_result_id;
-  if (!test_result_id) return alert("Test Kimliği bulunamadı.");
+  if (!test_result_id) return alert("Test ID topilmadi.");
 
   const answers = Object.entries(selectedAnswers.value).map(([qId, optId]) => {
     const question = tests.value.flatMap(t => t.questions).find(q => q.id === Number(qId));
@@ -141,14 +151,6 @@ const finishTest = async (isAutoFinish = false) => {
       user_answer: option?.text || String(optId),
     };
   });
-
-  const payload = {
-    test_result_id: Number(test_result_id),
-    answers,
-  };
-
-  // Konsolga payload ni chiqaramiz
-  console.log("API ga yuboriladigan ma'lumotlar:", JSON.stringify(payload, null, 2));
 
   try {
     const res = await fetch(`${API_BASE_URL}/multilevel/check-test/`, {
@@ -162,7 +164,7 @@ const finishTest = async (isAutoFinish = false) => {
 
     if (!res.ok) {
       const errorData = await res.json();
-      throw new Error(errorData.error || "Sunucu hatası");
+      throw new Error(errorData.error || "Server xatoligi");
     }
 
     const result = await res.json();
@@ -177,13 +179,15 @@ const finishTest = async (isAutoFinish = false) => {
     prevResults.listening = { correct, incorrect: total - correct, score: result.score, percentage };
     localStorage.setItem("testResults", JSON.stringify(prevResults));
 
+    // Tozalash
     sessionStorage.removeItem("startTime");
     sessionStorage.removeItem("selectedAnswers");
+    sessionStorage.removeItem("isTestStarted");
+    localStorage.removeItem("audioCurrentTime");
+    localStorage.removeItem("currentAudioIndex");
 
-    alert(`✅ Test tamamlandı.`);
-
-    const nextSection = "reading";
-    router.push(`/tests/multilevel/${nextSection}`);
+    alert("✅ Test yakunlandi.");
+    router.push("/tests/multilevel/reading");
   } catch (err) {
     console.error(err);
     alert(`Xatolik: ${err.message}`);
@@ -191,18 +195,43 @@ const finishTest = async (isAutoFinish = false) => {
 };
 
 onMounted(() => {
-  sessionStorage.setItem("isTestStarted", "true");
-  if (sessionStorage.getItem("isTestStarted")) isTestStarted.value = true;
+  const started = sessionStorage.getItem("isTestStarted") === "true";
+  const completed = localStorage.getItem("isTestCompleted");
 
-  const wasCompleted = localStorage.getItem("isTestCompleted");
-  if (wasCompleted && !isListening.value) {
+  if (completed && !isListening.value) {
     router.push("/tests/multilevel/reading");
+    return;
   }
 
-  localStorage.removeItem('testResult');
-  localStorage.removeItem('testResults');
-  localStorage.removeItem('isTestCompleted');
-  sessionStorage.removeItem('writingAnswers');
+  if (started) {
+    isTestStarted.value = true;
+    testStartedByUser.value = true;
+    isListening.value = true;
+
+    const storedStartTime = sessionStorage.getItem("startTime");
+    const duration = testInfo.value?.duration;
+
+    if (storedStartTime && duration) {
+      startTime.value = Number(storedStartTime);
+      durationInSeconds.value = duration * 60;
+      updateRemainingTime();
+      startTimer();
+    }
+
+    if (!audioElement.value) {
+      audioElement.value = new Audio();
+      audioElement.value.addEventListener("ended", () => {
+        currentAudioIndex.value++;
+        localStorage.setItem("currentAudioIndex", currentAudioIndex.value);
+        playAudio(currentAudioIndex.value);
+      });
+      audioElement.value.addEventListener("timeupdate", () => {
+        localStorage.setItem("audioCurrentTime", audioElement.value.currentTime);
+      });
+    }
+
+    playAudio(currentAudioIndex.value);
+  }
 });
 
 onUnmounted(() => {
@@ -210,6 +239,8 @@ onUnmounted(() => {
   audioElement.value?.pause();
 });
 </script>
+
+
 
 <template>
   <section class="w-full bg-[#DBEFFF] py-5 flex flex-col gap-5">
