@@ -17,13 +17,25 @@ const startTime = ref(null);
 const durationInSeconds = ref(null);
 const remainingTime = ref(0);
 const timerInterval = ref(null);
-const selectedAnswers = ref(JSON.parse(sessionStorage.getItem("selectedAnswers")) || {});
-const currentAudioIndex = ref(Number(localStorage.getItem("currentAudioIndex")) || 0);
+const selectedAnswers = ref(
+  JSON.parse(sessionStorage.getItem("selectedAnswers")) || {}
+);
+const currentAudioIndex = ref(
+  Number(localStorage.getItem("currentAudioIndex")) || 0
+);
+
+const selectedLevel = localStorage.getItem("selectedLevel") || "multilevel";
+const selectedExamId = localStorage.getItem("selectedExamId");
 const audioElement = ref(null);
 
 const { data, error } = await useFetch(`${API_BASE_URL}/multilevel/test/`, {
   headers: token ? { Authorization: `Bearer ${token}` } : {},
-  query: { language: 2, level: "multilevel", test: "listening", exam_id: 1 },
+  query: {
+    language: 2,
+    level: selectedLevel,
+    test: "listening",
+    exam_id: selectedExamId,
+  },
 });
 
 if (error.value) {
@@ -35,45 +47,52 @@ if (error.value) {
 
 const testInfo = computed(() => {
   const part = data.value?.part;
-  return part ? {
-    title: part.exam.title,
-    duration: data.value.duration,
-    level: part.level,
-    language: part.language.name,
-    partTitle: part.title,
-  } : null;
+  return part
+    ? {
+        title: part.exam.title,
+        duration: data.value.duration,
+        level: part.level,
+        language: part.language.name,
+        partTitle: part.title,
+      }
+    : null;
 });
 
-const tests = computed(() =>
-  data.value?.part.tests.map(test => {
-    const allOptions = test.options
-      ? Object.entries(test.options).map(([key, value], index) => ({
-          id: index + 1,
-          key,
-          text: value,
-        }))
-      : [];
+const tests = computed(
+  () =>
+    data.value?.part.tests.map((test) => {
+      const allOptions = test.options
+        ? Object.entries(test.options).map(([key, value], index) => ({
+            id: index + 1,
+            key,
+            text: value,
+          }))
+        : [];
 
-    return {
-      id: test.id,
-      title: test.title,
-      desc: test.description,
-      sample: test.sample,
-      audio: test.audio,
-      questions: test.questions.map(q => ({
-        id: q.id,
-        text: q.text,
-        isRadio: q.options && q.options.length > 0,
-        options: q.options && q.options.length > 0 ? q.options : allOptions,
-      })),
-    };
-  }) || []
+      return {
+        id: test.id,
+        title: test.title,
+        desc: test.description,
+        sample: test.sample,
+        audio: test.audio,
+        questions: test.questions.map((q) => ({
+          id: q.id,
+          text: q.text,
+          isRadio: q.options && q.options.length > 0,
+          options: q.options && q.options.length > 0 ? q.options : allOptions,
+        })),
+      };
+    }) || []
 );
 
-const allAudios = computed(() => tests.value.map(test => test.audio).filter(Boolean));
+const allAudios = computed(() =>
+  tests.value.map((test) => test.audio).filter(Boolean)
+);
 
 const unmarkedQuestions = computed(() =>
-  tests.value.flatMap(test => test.questions.filter(q => !selectedAnswers.value[q.id]))
+  tests.value.flatMap((test) =>
+    test.questions.filter((q) => !selectedAnswers.value[q.id])
+  )
 );
 
 const playAudio = (index) => {
@@ -96,7 +115,7 @@ const playAudio = (index) => {
   audioElement.value.currentTime = savedTime;
 
   setTimeout(() => {
-    audioElement.value.play().catch(err => {
+    audioElement.value.play().catch((err) => {
       console.warn("Audio autoplay blocked:", err.message);
     });
   }, 500);
@@ -119,7 +138,10 @@ const updateRemainingTime = () => {
 
 const selectAnswer = (questionId, optionId) => {
   selectedAnswers.value[questionId] = optionId;
-  sessionStorage.setItem("selectedAnswers", JSON.stringify(selectedAnswers.value));
+  sessionStorage.setItem(
+    "selectedAnswers",
+    JSON.stringify(selectedAnswers.value)
+  );
 };
 
 const startTest = () => {
@@ -135,16 +157,24 @@ const startTest = () => {
 };
 
 const finishTest = async (isAutoFinish = false) => {
-  if (!isAutoFinish && unmarkedQuestions.value.length > 0 &&
-      !confirm(`Siz ${unmarkedQuestions.value.length} ta savolga javob bermadingiz. Baribir yakunlaysizmi?`)) return;
+  if (
+    !isAutoFinish &&
+    unmarkedQuestions.value.length > 0 &&
+    !confirm(
+      `Siz ${unmarkedQuestions.value.length} ta savolga javob bermadingiz. Baribir yakunlaysizmi?`
+    )
+  )
+    return;
 
   clearInterval(timerInterval.value);
   const test_result_id = data.value?.test_result_id;
   if (!test_result_id) return alert("Test ID topilmadi.");
 
   const answers = Object.entries(selectedAnswers.value).map(([qId, optId]) => {
-    const question = tests.value.flatMap(t => t.questions).find(q => q.id === Number(qId));
-    const option = question?.options.find(o => o.id === Number(optId));
+    const question = tests.value
+      .flatMap((t) => t.questions)
+      .find((q) => q.id === Number(qId));
+    const option = question?.options.find((o) => o.id === Number(optId));
     return {
       question: Number(qId),
       user_option: Number(optId),
@@ -168,7 +198,7 @@ const finishTest = async (isAutoFinish = false) => {
     }
 
     const result = await res.json();
-    const correct = result.answers.filter(a => a.is_correct).length;
+    const correct = result.answers.filter((a) => a.is_correct).length;
     const total = result.answers.length;
     const percentage = Math.round((correct / total) * 100);
     isListening.value = false;
@@ -176,7 +206,12 @@ const finishTest = async (isAutoFinish = false) => {
     localStorage.setItem("isTestCompleted", true);
 
     const prevResults = JSON.parse(localStorage.getItem("testResults") || "{}");
-    prevResults.listening = { correct, incorrect: total - correct, score: result.score, percentage };
+    prevResults.listening = {
+      correct,
+      incorrect: total - correct,
+      score: result.score,
+      percentage,
+    };
     localStorage.setItem("testResults", JSON.stringify(prevResults));
 
     // Tozalash
@@ -226,7 +261,10 @@ onMounted(() => {
         playAudio(currentAudioIndex.value);
       });
       audioElement.value.addEventListener("timeupdate", () => {
-        localStorage.setItem("audioCurrentTime", audioElement.value.currentTime);
+        localStorage.setItem(
+          "audioCurrentTime",
+          audioElement.value.currentTime
+        );
       });
     }
 
@@ -240,51 +278,105 @@ onUnmounted(() => {
 });
 </script>
 
-
-
 <template>
   <section class="w-full bg-[#DBEFFF] py-5 flex flex-col gap-5">
     <!-- Start Page -->
-    <section v-if="!testStartedByUser" class="w-full h-[100vh] flex items-center justify-center">
-      <div v-if="testLoading" class="w-[90%] md:w-[40%] bg-white flex flex-col items-center gap-5 text-[#141522] rounded-[30px] py-5 px-4">
+    <section
+      v-if="!testStartedByUser"
+      class="w-full h-[100vh] flex items-center justify-center"
+    >
+      <div
+        v-if="testLoading"
+        class="w-[90%] md:w-[40%] bg-white flex flex-col items-center gap-5 text-[#141522] rounded-[30px] py-5 px-4"
+      >
         <p>Yükleme testi...</p>
       </div>
-      <div v-else-if="errorMessage" class="w-[90%] md:w-[40%] bg-white flex flex-col items-center gap-5 text-[#141522] rounded-[30px] py-5 px-4">
+      <div
+        v-else-if="errorMessage"
+        class="w-[90%] md:w-[40%] bg-white flex flex-col items-center gap-5 text-[#141522] rounded-[30px] py-5 px-4"
+      >
         <p class="text-red-600">{{ errorMessage }}</p>
       </div>
-      <div v-else class="w-[95%] md:w-[40%] bg-white flex flex-col items-center gap-5 text-[#141522] rounded-[30px] py-5 px-4">
+      <div
+        v-else
+        class="w-[95%] md:w-[40%] bg-white flex flex-col items-center gap-5 text-[#141522] rounded-[30px] py-5 px-4"
+      >
         <h1 class="text-[24px] font-[600]">Dinleme</h1>
         <p>Dinleme bölümüne başlamak üzeresiniz.</p>
         <div class="w-full flex justify-center">
           <div class="w-[23%] flex flex-col items-center">
-            <img src="~/assets/svg/headphone.svg" alt="headphone" loading="lazy" />
+            <img
+              src="~/assets/svg/headphone.svg"
+              alt="headphone"
+              loading="lazy"
+            />
             <span class="font-[500]">{{ testInfo?.duration }} dakika</span>
           </div>
         </div>
         <ul class="w-full flex flex-col gap-4 list-disc px-5">
-          <li>Bu testteki sorular seviyenize uyum sağlamak için zorlaşabilir veya kolaylaşabilir.</li>
-          <li>Ses kaydını başlatmadan önce soruları okuyun. Her ses kaydını iki kez dinleyebilirsiniz.</li>
+          <li>
+            Bu testteki sorular seviyenize uyum sağlamak için zorlaşabilir veya
+            kolaylaşabilir.
+          </li>
+          <li>
+            Ses kaydını başlatmadan önce soruları okuyun. Her ses kaydını iki
+            kez dinleyebilirsiniz.
+          </li>
           <li>Bir egzersizi gönderdikten sonra geri dönemezsiniz.</li>
         </ul>
-        <button @click="startTest" class="px-10 py-2 bg-[#0C8CE9] rounded-[15px] text-white">Başla</button>
+        <button
+          @click="startTest"
+          class="px-10 py-2 bg-[#0C8CE9] rounded-[15px] text-white"
+        >
+          Başla
+        </button>
       </div>
     </section>
 
     <!-- Test Content -->
     <template v-else>
-      <SharedTestTime v-if="testInfo" title="Dinleme" :remainingTime="remainingTime" :totalTime="testInfo.duration * 60" class="sticky top-0 z-10" />
-      <div class="test-content w-[90%] mx-auto bg-white rounded-[30px] flex flex-col items-center py-5 gap-3">
-        <h1 class="text-[20px] font-[600] text-center">{{ testInfo?.partTitle }}</h1>
-        <p class="w-[90%] text-center">{{ testInfo?.language }} - {{ testInfo?.level }}. Dinlediğiniz cümleleri tamamlayınız.</p>
-        <div v-for="test in tests" :key="test.id" class="w-[90%] flex flex-col gap-5">
+      <SharedTestTime
+        v-if="testInfo"
+        title="Dinleme"
+        :remainingTime="remainingTime"
+        :totalTime="testInfo.duration * 60"
+        class="sticky top-0 z-10"
+      />
+      <div
+        class="test-content w-[90%] mx-auto bg-white rounded-[30px] flex flex-col items-center py-5 gap-3"
+      >
+        <h1 class="text-[20px] font-[600] text-center">
+          {{ testInfo?.partTitle }}
+        </h1>
+        <p class="w-[90%] text-center">
+          {{ testInfo?.language }} - {{ testInfo?.level }}. Dinlediğiniz
+          cümleleri tamamlayınız.
+        </p>
+        <div
+          v-for="test in tests"
+          :key="test.id"
+          class="w-[90%] flex flex-col gap-5"
+        >
           <h2 class="text-lg font-semibold">{{ test.title }}</h2>
           <p class="font-light">{{ test.desc }}</p>
           <p class="font-light">{{ test.sample }}</p>
-          <div v-for="question in test.questions" :key="question.id" class="w-full flex flex-col gap-2">
-            <span class="font-medium" :class="{ 'text-red-600': !selectedAnswers[question.id] }">{{ question.text }}:</span>
+          <div
+            v-for="question in test.questions"
+            :key="question.id"
+            class="w-full flex flex-col gap-2"
+          >
+            <span
+              class="font-medium"
+              :class="{ 'text-red-600': !selectedAnswers[question.id] }"
+              >{{ question.text }}:</span
+            >
             <!-- Radio buttonlar (question ichida options bo‘lsa) -->
             <div v-if="question.isRadio" class="flex flex-col gap-2">
-              <label v-for="option in question.options" :key="option.id" class="flex items-center gap-2 cursor-pointer">
+              <label
+                v-for="option in question.options"
+                :key="option.id"
+                class="flex items-center gap-2 cursor-pointer"
+              >
                 <input
                   type="radio"
                   :name="'question-' + question.id"
@@ -302,17 +394,28 @@ onUnmounted(() => {
                 class="w-full p-3 border rounded-md"
                 :class="{ 'border-red-600': !selectedAnswers[question.id] }"
                 :value="selectedAnswers[question.id] || ''"
-                @change="(e) => selectAnswer(question.id, Number(e.target.value))"
+                @change="
+                  (e) => selectAnswer(question.id, Number(e.target.value))
+                "
               >
                 <option disabled value="">Cevaplardan birini seçin.</option>
-                <option v-for="option in question.options" :key="option.id" :value="option.id">
+                <option
+                  v-for="option in question.options"
+                  :key="option.id"
+                  :value="option.id"
+                >
                   {{ option.text }}
                 </option>
               </select>
             </div>
           </div>
         </div>
-        <button @click="finishTest" class="w-[60%] bg-[#4CAF50] py-2 text-white rounded-md mt-5">Testi tamamla</button>
+        <button
+          @click="finishTest"
+          class="w-[60%] bg-[#4CAF50] py-2 text-white rounded-md mt-5"
+        >
+          Testi tamamla
+        </button>
       </div>
     </template>
   </section>

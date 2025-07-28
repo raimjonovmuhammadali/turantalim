@@ -17,12 +17,13 @@ const startTime = ref(Date.now());
 const remainingTime = ref(0);
 const timerInterval = ref(null);
 const durationInSeconds = ref(0);
-
+const selectedLevel = localStorage.getItem("selectedLevel") || "multilevel";
+const selectedExamId = localStorage.getItem("selectedExamId");
 const { data, error } = await useFetch(
   `${API_BASE_URL}/multilevel/test/`,
   {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
-    query: { language: 2, level: "multilevel", test: "writing", exam_id: 1 },
+    query: { language: 2, level: selectedLevel, test: "writing", exam_id: selectedExamId },
   }
 );
 

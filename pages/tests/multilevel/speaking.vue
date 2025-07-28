@@ -18,14 +18,15 @@ const timerInterval = ref(null);
 
 const isTestStarted = ref(sessionStorage.getItem("isTestStarted") === "true");
 const remainingTime = ref(0);
-
+const selectedLevel = localStorage.getItem("selectedLevel") || "multilevel";
+const selectedExamId = localStorage.getItem("selectedExamId");
 // New loading state for loader display
 const loading = ref(false);
 
 // Fetch test data
 const { data, error } = await useFetch(`${API_BASE_URL}/multilevel/test/`, {
   headers: token ? { Authorization: `Bearer ${token}` } : {},
-  query: { language: 2, level: "multilevel", test: "speaking", exam_id: 1 },
+  query: { language: 2, level: selectedLevel, test: "speaking", exam_id: selectedExamId },
 });
 
 if (error.value || !data.value?.part?.tests?.length) {

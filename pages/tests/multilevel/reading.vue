@@ -21,13 +21,14 @@ const redirectToMain = (message = "Bir hata oluştu.") => {
   alert(message);
   router.push("/tests/multilevel/writing");
 };
-
+const selectedLevel = localStorage.getItem("selectedLevel") || "multilevel";
+const selectedExamId = localStorage.getItem("selectedExamId");
 // Fetch test
 const { data, error } = await useFetch(
   `${API_BASE_URL}/multilevel/test/`,
   {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
-    query: { language: 2, level: "multilevel", test: "reading", exam_id: 1 },
+    query: { language: 2, level: selectedLevel, test: "reading", exam_id: selectedExamId },
   }
 );
 

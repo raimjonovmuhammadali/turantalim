@@ -29,7 +29,7 @@ definePageMeta({
 
       <div class="w-full test-types flex flex-col md:flex-row gap-5 md:gap-0 flex-wrap items-center justify-between">
         <div class="w-full md:w-[45%] flex items-center justify-center text-center">
-          <nuxt-link to="/tests/milliy" class="w-full px-10 py-2 cursor-pointer bg-[#0C8CE9] rounded-[15px] text-white">Milliy sertifikat</nuxt-link>
+          <nuxt-link to="/tests/listtest" class="w-full px-10 py-2 cursor-pointer bg-[#0C8CE9] rounded-[15px] text-white">Milliy sertifikat</nuxt-link>
         </div>
         <div class="w-full md:w-[45%] flex items-center justify-center text-center">
           <nuxt-link to="" class="w-full px-10 py-2 cursor-pointer bg-[#0C8CE9] rounded-[15px] text-white">TYS</nuxt-link>
