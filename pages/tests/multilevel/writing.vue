@@ -82,7 +82,7 @@ onMounted(() => {
 
   if (isDone) {
     alert("Yazma sınavı tamamlandı.");
-    router.push("/tests/multilevel/speaking");
+    router.push("/tests/multilevel/testMicrofon");
   }
 });
 
@@ -193,7 +193,7 @@ const finishTest = async (auto = false) => {
     localStorage.setItem("testResults", JSON.stringify(saved));
 
     alert("✅ Test tamamlandı.");
-    router.push("/tests/multilevel/speaking");
+    router.push("/tests/multilevel/testMicrofon");
   } catch (e) {
     alert(e.message || "Kapatma sırasında hata oluştu.");
   } finally {

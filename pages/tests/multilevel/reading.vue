@@ -93,6 +93,7 @@ const startTimer = () => {
 
 // INIT
 onMounted(() => {
+  localStorage.removeItem("audioCurrentTime");
   isTestStarted.value = true;
   sessionStorage.setItem("isTestStarted", "true");
 

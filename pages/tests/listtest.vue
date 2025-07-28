@@ -42,7 +42,7 @@ onMounted(async () => {
   }
 });
 
-function handleStartTest(testId: number) {
+async function handleStartTest(testId: number) {
   const selectedTest = tests.value.exams.find((t) => t.id === testId);
   const price = selectedTest?.price || 0;
   selectedPrice.value = price;
@@ -50,6 +50,24 @@ function handleStartTest(testId: number) {
   if (balanceStore.balance >= price) {
     // ✅ Balans yetarli
     localStorage.setItem("selectedExamId", testId.toString());
+
+    try {
+      const token = localStorage.getItem("access_token");
+      const res = await fetch(`${API_BASE_URL}/payment/exampayment/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ exam: testId }),
+      });
+
+      const data = await res.json();
+      console.log("✅ To‘lov javobi:", data);
+    } catch (err) {
+      console.error("❌ To‘lov so‘rovida xatolik:", err);
+    }
+
     router.push("/tests/milliy");
   } else {
     // ❌ Balans yetarli emas - modal ko‘rsatamiz
@@ -57,6 +75,7 @@ function handleStartTest(testId: number) {
     showModal.value = true;
   }
 }
+
 </script>
 
 <template>
