@@ -23,7 +23,7 @@ export default defineNuxtConfig({
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
         { name: 'description', content: 'Turan Ta\'lim - turk tilini biz bilan samarali o\'rganing!' },
         { name: 'keywords', content: 'ta\'lim, o\'quv, kurslar, uzbekistan, turan talim, turk tili, multilevel, TYS, testlar, milliy sertifikat' },
-        { name: 'author', content: 'Muhammadali Rayimjonov' },
+        { name: 'author', content: 'MRX Agency' },
         // Open Graph teglari
         { property: 'og:title', content: 'Turan Ta\'lim' },
         { property: 'og:description', content: 'Turan Ta\'lim - turk tilini biz bilan samarali o\'rganing!' },

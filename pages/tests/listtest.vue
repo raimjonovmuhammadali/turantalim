@@ -68,13 +68,19 @@ async function handleStartTest(testId: number) {
       console.error("❌ To‘lov so‘rovida xatolik:", err);
     }
 
-    router.push("/tests/milliy");
+    // 👇 Darajaga qarab qaysi sahifaga yo'naltirish
+    if (level.value === "multilevel") {
+      router.push("/tests/milliy");
+    } else {
+      router.push("/tests/multilevel/listening");
+    }
   } else {
     // ❌ Balans yetarli emas - modal ko‘rsatamiz
     missingAmount.value = price - balanceStore.balance;
     showModal.value = true;
   }
 }
+
 
 </script>
 

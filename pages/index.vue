@@ -50,7 +50,7 @@ const is_auth = localStorage.getItem("access_token");
     >
       <div class="w-full md:w-6/12 text-center md:text-start">
         <h1 class="text-[40px] md:text-[64px] text-[#141522] font-[600] mb-5">
-          Turk tilini 3oyda “Turan Ta’lim” bilan to‘liq o‘rganing!
+          Turk tilini 6 oyda “Turan Ta’lim” bilan to‘liq o‘rganing!
         </h1>
         <nuxt-link
           to="/auth"
@@ -84,7 +84,7 @@ const is_auth = localStorage.getItem("access_token");
       </div>
     </div>
 
-    <div
+    <!-- <div
       class="about w-full h-auto md:h-[600px] bg-[#DBEFFF] flex flex-col-reverse md:flex-row items-center py-5 md:py-0" id="about"
     >
       <div
@@ -105,9 +105,9 @@ const is_auth = localStorage.getItem("access_token");
           <img src="~/assets/images/logo-about.png" alt="" />
         </div>
       </div>
-    </div>
+    </div> -->
 
-    <div
+    <!-- <div
       class="register-form w-full flex items-center justify-center h-auto md:h-[500px] p-5 md:p-0"
     >
       <form action="" class="w-full md:w-[30%] text-center flex flex-col gap-4">
@@ -134,7 +134,7 @@ const is_auth = localStorage.getItem("access_token");
           Ro‘yxatdan o‘tish
         </button>
       </form>
-    </div>
+    </div> -->
   </main>
 
   <footer class="w-full h-auto md:h-[300px] bg-[#01042A] py-5 md:py-0">
@@ -156,9 +156,9 @@ const is_auth = localStorage.getItem("access_token");
 
       <div class="w-full contact text-white flex flex-col items-center gap-4">
         <h1 class="text-[18px]">Adminstrator bilan bog‘lanish</h1>
-        <a href="">+998 (90) 154-22-33</a>
+        <a href="">+998 90 846 81 88</a>
         <ul class="flex gap-5">
-          <li>
+          <!-- <li>
             <a href="#"
               ><img
                 src="~/assets/svg/facebook.svg"
@@ -173,9 +173,9 @@ const is_auth = localStorage.getItem("access_token");
                 alt="instagram"
                 loading="lazy"
             /></a>
-          </li>
+          </li> -->
           <li>
-            <a href="#"
+            <a href="https://t.me/turkiyedeokumak"
               ><img
                 src="~/assets/svg/telegram.svg"
                 alt="twitter"

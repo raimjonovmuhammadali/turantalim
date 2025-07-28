@@ -8,12 +8,12 @@ export interface Box {
   
   export function useBox() {
     const boxes = ref<Box[]>([
-      { id: 1,title: 'A1', hero: "Darajadagilar uchun", link: "/", color: "blue" },
-      { id: 2,title: 'B1', hero: "Darajadagilar uchun", link: "/", color: "green" },
-      { id: 3,title: 'C1', hero: "Darajadagilar uchun", link: "/", color: "red" },
-      { id: 4,title: 'A2', hero: "Darajadagilar uchun", link: "/", color: "blue" },
-      { id: 5,title: 'B2', hero: "Darajadagilar uchun", link: "/", color: "green" },
-      { id: 6,title: 'Multilevel', hero: null, link: "/tests/", color: "orange" },
+      { id: 1,title: 'a1', hero: "Darajadagilar uchun", link: "/tests/listtest", color: "blue" },
+      { id: 2,title: 'b1', hero: "Darajadagilar uchun", link: "/tests/listtest", color: "green" },
+      { id: 3,title: 'c1', hero: "Darajadagilar uchun", link: "/tests/listtest", color: "red" },
+      { id: 4,title: 'a2', hero: "Darajadagilar uchun", link: "/tests/listtest", color: "blue" },
+      { id: 5,title: 'b2', hero: "Darajadagilar uchun", link: "/tests/listtest", color: "green" },
+      { id: 6,title: 'multilevel', hero: null, link: "/tests/", color: "orange" },
     ]);
   
     return { boxes };
