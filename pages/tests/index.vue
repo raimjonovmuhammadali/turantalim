@@ -36,7 +36,7 @@ definePageMeta({
         </div>
       </div>
 
-      <nuxt-link to="/" class="text-gray-600">Ana sayfa~</nuxt-link>
+      <nuxt-link to="/" class="text-gray-600">Ana Sayfa</nuxt-link>
     </div>
   </section>
 </template>

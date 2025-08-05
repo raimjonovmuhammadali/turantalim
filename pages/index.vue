@@ -22,19 +22,16 @@ const is_auth = localStorage.getItem("access_token");
       />
       <ul class="hidden md:flex items-center gap-5 font-[500] text-[20px]">
         <li>
-          <nuxt-link to="/">Bosh sahifa</nuxt-link>
+          <nuxt-link to="/">Ana sayfa</nuxt-link>
         </li>
-        <li>
-          <nuxt-link to="#about">Biz haqimizda</nuxt-link>
-        </li>
-        <li><a href="#tests">Testlar</a></li>
+        <li><a href="#tests">Testler</a></li>
       </ul>
       <nuxt-link
         to="/auth"
         v-if="!is_auth"
         class="px-5 py-3 rounded-xl text-white font-medium bg-[#0C8CE9] cursor-pointer"
       >
-        Ro'yhatdan o'tish
+        Üye olun
       </nuxt-link>
       <nuxt-link
         to="/profile"
@@ -50,14 +47,14 @@ const is_auth = localStorage.getItem("access_token");
     >
       <div class="w-full md:w-6/12 text-center md:text-start">
         <h1 class="text-[40px] md:text-[64px] text-[#141522] font-[600] mb-5">
-          Turk tilini 6 oyda “Turan Ta’lim” bilan to‘liq o‘rganing!
+          "Turan Talim" ile Türkçeyi baştan sona öğrenin!
         </h1>
         <nuxt-link
           to="/auth"
           v-if="!is_auth"
           class="mt-5 px-5 py-3 rounded-xl text-white font-medium bg-[#0C8CE9] cursor-pointer"
         >
-          Ro'yhatdan o'tish
+          Üye olun
         </nuxt-link>
         <nuxt-link
           to="/profile"
@@ -77,7 +74,7 @@ const is_auth = localStorage.getItem("access_token");
       class="test-section w-[90%] mx-auto h-auto md:h-[600px] flex flex-col gap-10 justify-center"
     >
       <h1 class="text-[30px] md:text-[50px] font-[600]">
-        Umumiy test sinovlari
+        Genel test sınavları
       </h1>
       <div class="tests-boxes flex gap-5 flex-wrap">
         <TestBox v-for="box in boxes" :key="box.id" :box="box" />
@@ -107,19 +104,19 @@ const is_auth = localStorage.getItem("access_token");
       </div>
     </div> -->
 
-    <!-- <div
+    <div
       class="register-form w-full flex items-center justify-center h-auto md:h-[500px] p-5 md:p-0"
     >
       <form action="" class="w-full md:w-[30%] text-center flex flex-col gap-4">
-        <h1 class="text-[30px] font-[600]">Kursga ro‘yxatdan o‘tish</h1>
+        <h1 class="text-[30px] font-[600]">Kursa kaydolun</h1>
         <input
           type="text"
-          placeholder="Ismingiz"
+          placeholder="Adınız"
           class="border border-[#e3e9ff] px-4 py-3 bg-[#EDEFF7] outline-none rounded-[15px]"
         />
         <input
           type="text"
-          placeholder="Familiyangiz"
+          placeholder="Soyadınız"
           class="border border-[#e3e9ff] px-4 py-3 bg-[#EDEFF7] outline-none rounded-[15px]"
         />
         <input
@@ -131,10 +128,10 @@ const is_auth = localStorage.getItem("access_token");
           type="submit"
           class="w-full rounded-xl p-3 text-white font-medium transition-opacity flex items-center justify-center bg-blue-600 hover:bg-blue-700 cursor-pointer"
         >
-          Ro‘yxatdan o‘tish
+          Kayıt yap
         </button>
       </form>
-    </div> -->
+    </div>
   </main>
 
   <footer class="w-full h-auto md:h-[300px] bg-[#01042A] py-5 md:py-0">
@@ -155,7 +152,7 @@ const is_auth = localStorage.getItem("access_token");
       </div>
 
       <div class="w-full contact text-white flex flex-col items-center gap-4">
-        <h1 class="text-[18px]">Adminstrator bilan bog‘lanish</h1>
+        <h1 class="text-[18px]">Yöneticiyle iletişime geçin</h1>
         <a href="">+998 90 846 81 88</a>
         <ul class="flex gap-5">
           <!-- <li>
@@ -188,14 +185,14 @@ const is_auth = localStorage.getItem("access_token");
       <div
         class="w-full adress text-[18px] text-white flex flex-col items-center md:items-end gap-4 text-center md:text-start"
       >
-        <span class="text-[14px]">Manzil</span>
+        <span class="text-[14px]">Adres</span>
         <p>
           Farg’ona shahar, A. <br />
           Navoiy 80B
         </p>
-        <span class="text-[14px]">Ish vaqtlari:</span>
+        <span class="text-[14px]">Çalışma saatleri:</span>
         <p>
-          Dushanba — Juma <br />
+          Pazartesi - Cuma <br />
           9:00 — 18:00
         </p>
       </div>
